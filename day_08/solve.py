@@ -2,52 +2,42 @@ forest = [] # A matrix of ints
 col_len = row_len = 0
 visible = max_score = 0
 
-# Produce an iterable that walks backwards or forwards depending on args
-def get_range(horiz, left_or_up, i):
-  start, end, inc = (i - 1, -1, -1) if left_or_up else (i + 1, (col_len if horiz else row_len), 1)
-  return range(start, end, inc)
+def get_trees(direc, row, col):
+  horiz = direc == "L" or direc == "R"
+  left_or_up = direc == "L" or direc == "U"
+  a = row if direc == "U" or direc == "D" else col
+  b = col if direc == "U" or direc == "D" else row
+  start, end, inc = (a-1, -1, -1) if left_or_up else (a+1, (col_len if horiz else row_len), 1)
+  return [forest[b if horiz else c][c if horiz else b] for c in range(start, end, inc)]
 
-def check_left_right(row, col, val, left):
-  for c in get_range(True, left, col):
-    if forest[row][c] >= val:
-      return False
-  return True
+def visible_for_direction(direc, row, col, tree):
+  trees = get_trees(direc, row, col)
+  return all(t < tree for t in trees)
 
-def check_up_down(row, col, val, up):
-  for r in get_range(False, up, row):
-    if forest[r][col] >= val:
-      return False
-  return True
-
-def score_left_right(row, col, val, left):
-  score = 0
-  for c in get_range(True, left, col):
-    score += 1
-    if forest[row][c] >= val:
+def score_for_direction(direc, row, col, tree):
+  trees = get_trees(direc, row, col)
+  vis = 0
+  for t in trees:
+    vis += 1
+    if t >= tree:
       break
-  return score
+  return vis
 
-def score_up_down(row, col, val, up):
-  score = 0
-  for r in get_range(False, up, row):
-    score += 1
-    if forest[r][col] >= val:
-      break
-  return score
-
-def check_visible(row, col):
+def check_visibility_for_tree_at(row, col):
   tree = forest[row][col]
-  return check_left_right(row, col, tree, True) or \
-    check_left_right(row, col, tree, False) or \
-    check_up_down(row, col, tree, True) or \
-    check_up_down(row, col, tree, False)
+  return \
+    visible_for_direction("L", row, col, tree) or \
+    visible_for_direction("R", row, col, tree) or \
+    visible_for_direction("U", row, col, tree) or \
+    visible_for_direction("D", row, col, tree)
 
-def get_score(row, col):
+def get_score_for_tree_at(row, col):
   tree = forest[row][col]
-  return score_left_right(row, col, tree, True) * \
-    score_left_right(row, col, tree, False) * \
-    score_up_down(row, col, tree, True) * \
-    score_up_down(row, col, tree, False)
+  return \
+    score_for_direction("L", row, col, tree) * \
+    score_for_direction("R", row, col, tree) * \
+    score_for_direction("U", row, col, tree) * \
+    score_for_direction("D", row, col, tree)
 
 # Initialize forest, col_len, row_len
 with open("input.txt", "r") as file:
@@ -58,18 +48,11 @@ with open("input.txt", "r") as file:
     forest.append(row)
   row_len = len(forest)
 
-# Part one
-for r in range(row_len):
-  for c in range(col_len):
-    if check_visible(r, c):
-      visible += 1
+# Convenient way to iterate with "row" and "col" indexes
+coord_generator = [(i // row_len, i % col_len) for i in range(row_len * col_len)]
 
-# Part two
-for r in range(row_len):
-  for c in range(col_len):
-    score = get_score(r, c)
-    if score > max_score:
-      max_score = score
+visible = [check_visibility_for_tree_at(r, c) for r, c in coord_generator].count(True)
+print("Part one:", visible)
 
-print(visible)
-print(max_score)
+max_score = max([get_score_for_tree_at(r, c) for r, c in coord_generator])
+print("Part two:", max_score)
