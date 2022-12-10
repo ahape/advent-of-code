@@ -28,7 +28,7 @@ def next_head(head, direc):
     return (head[0], head[1] + 1)
 
 placements = set()
-knots = 10
+knots = 9
 
 def do_move(head, tails, move):
   direc, spaces = move
@@ -36,13 +36,13 @@ def do_move(head, tails, move):
   for _ in range(int(spaces)):
     head = next_head(head, direc)
     prev = head
-    updated_tails = []
+    updated = []
     for tail in tails:
       tail = next_tail(tail, prev)
       prev = tail
-      placements.add(tail)
-      updated_tails.append(tail)
-    tails = updated_tails
+      updated.append(tail)
+    tails = updated
+    placements.add(tails[-1])
     #paint(head, tails)
   return head, tails
 
@@ -75,13 +75,13 @@ def paint(head, tails):
 
 with open("input.txt", "r") as file:
   head = (canvas[0]//2,canvas[1]//2)
-  tails = [head]
+  tails = [*map(lambda _: head, range(knots))]
   #paint(head, tails)
   for line in file.readlines():
     line = line.strip()
     move = line.split(" ")
     head, tails = do_move(head, tails, move)
-  #paint(head, tails)
+  paint(head, tails)
 
 # Part one
 print(len(list(placements)))
