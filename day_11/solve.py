@@ -27,13 +27,13 @@ def parse_operation(text):
   operation = text[len(operation_flag):].split(" ")
   _, _, v1, op, v2 = operation
   if op == "+":
-    return lambda old: (parse_operator(v1, old) + parse_operator(v2, old)) // 3
+    return lambda old: (parse_operator(v1, old) + parse_operator(v2, old))
   if op == "-":
-    return lambda old: (parse_operator(v1, old) - parse_operator(v2, old)) // 3
+    return lambda old: (parse_operator(v1, old) - parse_operator(v2, old))
   if op == "*":
-    return lambda old: (parse_operator(v1, old) * parse_operator(v2, old)) // 3
+    return lambda old: (parse_operator(v1, old) * parse_operator(v2, old))
   if op == "/":
-    return lambda old: (parse_operator(v1, old) // parse_operator(v2, old)) // 3
+    return lambda old: (parse_operator(v1, old) // parse_operator(v2, old))
 
 def parse_test(text):
   # assuming div by
@@ -70,10 +70,9 @@ def parse_line(line, index):
     monkey.handle_false = parse_if(line, monkey)
   return index
 
-def do_round(round_number):
-  print(f"- Round {round_number} -")
+def do_round(round_number, worry_level):
   for monkey in monkeys:
-    monkey.items = [monkey.operation(item) for item in monkey.items]
+    monkey.items = [monkey.operation(item) // worry_level for item in monkey.items]
     items = monkey.items[:]
     for item in items:
       monkey.inspections += 1
@@ -81,8 +80,11 @@ def do_round(round_number):
         monkey.handle_true(item)
       else:
         monkey.handle_false(item)
+  """For debugging
+  print(f"- Round {round_number} -")
   for monkey in monkeys:
-    print(monkey.name, monkey.inspections, monkey.items)
+    print(monkey.name, monkey.inspections)#, monkey.items)
+  """
 
 def get_monkey_business(top_x):
   most_inspections = sorted(monkeys[:], key=lambda x: x.inspections, reverse=True)[:top_x]
@@ -96,11 +98,17 @@ def parse_input():
   for line in file.readlines():
     index = parse_line(line.strip(), index)
 
-with open("input.txt") as file:
+with open("example.txt") as file:
   parse_input()
 
   # Part 1:
   for n in range(1, 21):
-    do_round(n)
+    do_round(n, 3)
 
-  print("Monkey_business", get_monkey_business(2))
+  # Part 2:
+  """
+  for n in range(1, 21):
+    do_round(n, arg)
+  """
+
+  print("Monkey business", get_monkey_business(2))
