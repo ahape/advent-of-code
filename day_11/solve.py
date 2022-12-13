@@ -36,7 +36,6 @@ def parse_operation(text):
     return lambda old: (parse_operator(v1, old) // parse_operator(v2, old))
 
 def parse_test(text):
-  # assuming div by
   item = int(text.split(" ")[-1])
   return lambda x: not(x % item)
 
