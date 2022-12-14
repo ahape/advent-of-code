@@ -1,3 +1,5 @@
+import sys
+
 def parse_path(text):
   return [*map(lambda x: [*map(lambda y: int(y), x.split(","))], text.split(" -> "))]
 
@@ -43,15 +45,14 @@ def print_grid(grid):
   print(canvas)
 
 def drop_sand_loop(grid, xoffset):
-  for _ in range(24):
-    [x, y], hit = drop_sand(grid, xoffset)
+  for _ in range(int(sys.argv[1])):
+    [x, y], hit = drop_sand(grid, 500-xoffset)
     if hit == "o":
-      x, y = settle_sand_at(grid, [x,y], hit)
+      x, y = settle_sand_at(grid, [x, y])
     grid[y][x] = "o"
 
-def drop_sand(grid, xoffset):
-  x, y = 500 - xoffset, 0
-  for row in grid:
+def drop_sand(grid, x=0, y=0):
+  for row in grid[y:]:
     cell = row[x] 
     if cell == "#":
       return [x, y-1], cell
@@ -65,45 +66,41 @@ def no_rocks_above(grid, x, y):
       return False
   return True
 
-def settle_sand_at(grid, point, hit):
+def settle_sand_at(grid, point):
   x, y = point
-  j = 0
   i = 1
   last_empty = None
+  no_dl = no_dr = False
   try:
     while True:
       # diagonal left
       dl_hit = grid[y+i][x-i]
-      if dl_hit == "." and grid[y+i+1][x-i] == "#":
-        return [x-i, y+i]
-      if dl_hit == "#" and no_rocks_above(grid, x-i, y+i):
-        return [x-j, y+j]
+      # if diagonal left is empty, and below that is a rock, we're good
+      if not no_dl and dl_hit == ".":
+        [_x, _y], hit = drop_sand(grid, x-i, y+i)
+        if hit == "#":
+          x, y = [_x, _y]
+      if not no_dl and dl_hit == "#":
+        no_dl = True
+
       # diagonal right
       dr_hit = grid[y+i][x+i] 
-      if dr_hit == "." and grid[y+i+1][x+i] == "#":
-        return [x+i, y+i]
-      if dr_hit == "#" and no_rocks_above(grid, x+i, y+i):
-        return [x+j, y+j]
-      if dr_hit == ".":
+      # if diagonal right is empty, and below that is a rock, we're good
+      if not no_dr and dr_hit == ".":
+        [_x, _y], hit = drop_sand(grid, x+i, y+i)
+        if hit == "#":
+          x, y = [_x, _y]
+      if not no_dr and dr_hit == "#":
+        no_dr = True
+      
+      if no_dr and dr_hit == ".":
         last_empty = [x+i, y+i]
-      if dl_hit == ".":
+      if no_dl and dl_hit == ".":
         last_empty = [x-i, y+i]
-      """
-      if dr_hit == ".":
-        if grid[y+j][x+j] == "#" and no_rocks_above(grid, x+i, y+i):
-          return [x+i, y+i]
-        elif grid[y+i][x+j] == "o":
-          return [x+i, y+i]
-      if dl_hit == "#" and \
-          not no_rocks_above(grid, x-i, y+i) and \
-          dr_hit == "#" and \
-          not no_rocks_above(grid, x+i, y+i):
-        return [x, y]
-      """
-      j = i
+
       i += 1
   except:
-    return last_empty or [x,y]
+    return [x,y]
 
 def draw_rocks(path, grid, xoffset):
   last = None
