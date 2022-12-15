@@ -1,5 +1,8 @@
 import sys
 
+class AbyssReachedError(Exception):
+  pass
+
 def parse_path(text):
   return [*map(lambda x: [*map(lambda y: int(y), x.split(","))], text.split(" -> "))]
 
@@ -29,11 +32,13 @@ def create_grid(path):
   grid = []
   for _ in range((ymax - ymin) + 1):
     row = []
-    for _ in range((xmax - xmin) + 1):
+    # '3' instead of '1' to make room for the edges that drop into the abyss.
+    # 1 for the left edge, 1 for the right
+    for _ in range((xmax - xmin) + 3):
       row.append(".")
     grid.append(row)
   
-  return grid, xmin
+  return grid, xmin - 1
 
 def print_grid(grid):
   canvas = ""
@@ -43,12 +48,17 @@ def print_grid(grid):
     i += 1
   print(canvas)
 
-def drop_sand_loop(grid, xoffset, grains):
-  for _ in range(grains):
-    [x, y], hit = drop_sand(grid, 500-xoffset)
-    if hit == "o":
-      x, y = settle_sand(grid, [x, y])
-    grid[y][x] = "o"
+def drop_sand_loop(grid, xoffset):
+  grains = 0
+  try:
+    for n in range(1000):
+      [x, y], hit = drop_sand(grid, 500-xoffset)
+      if hit == "o":
+        x, y = settle_sand(grid, [x, y])
+      grid[y][x] = "o"
+      grains = n + 1
+  except AbyssReachedError:
+    return grains
 
 def drop_sand(grid, x=0, y=0):
   for row in grid[y:]:
@@ -56,21 +66,21 @@ def drop_sand(grid, x=0, y=0):
     if cell != ".":
       return [x, y-1], cell
     y += 1
+  return [x, y], "~"
 
 def settle_sand_diagonally(grid, point, left):
   xchange = -1 if left else 1
   x, y = point[0] + xchange, point[1] + 1
   okay_spot = None
 
-  try:
-    while grid[y][x] == ".": 
-      [x, y], hit = drop_sand(grid, x, y)
-      if grid[y][x] == ".":
-        okay_spot = [x, y]
-      x += xchange
-      y += 1
-  except:
-    pass
+  while y <= len(grid) and grid[y][x] == ".": 
+    [x, y], hit = drop_sand(grid, x, y)
+    if hit == "~":
+      raise AbyssReachedError
+    if grid[y][x] == ".":
+      okay_spot = [x, y]
+    x += xchange
+    y += 1
 
   return bool(okay_spot), okay_spot or point
 
@@ -111,6 +121,9 @@ with open("example.txt") as file:
   for point in paths:
     draw_rocks(point, grid, xmin)
 
-  drop_sand_loop(grid, xmin, int(sys.argv[1]))
+  #grains = drop_sand_loop(grid, xmin, int(sys.argv[1]))
 
+  grains = drop_sand_loop(grid, xmin)
+
+  print("Settled grains", grains)
   print_grid(grid)
