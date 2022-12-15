@@ -51,12 +51,12 @@ def print_grid(grid):
 def drop_sand_loop(grid, xoffset):
   grains = 0
   try:
-    for n in range(1000):
+    while True:
       [x, y], hit = drop_sand(grid, 500-xoffset)
       if hit == "o":
         x, y = settle_sand(grid, [x, y])
       grid[y][x] = "o"
-      grains = n + 1
+      grains += 1
   except AbyssReachedError:
     return grains
 
@@ -68,32 +68,40 @@ def drop_sand(grid, x=0, y=0):
     y += 1
   return [x, y], "~"
 
-def settle_sand_diagonally(grid, point, left):
-  xchange = -1 if left else 1
-  x, y = point[0] + xchange, point[1] + 1
-  okay_spot = None
+def settle_sand_diagonally(grid, point):
+  left, right = -1, 1
+  [x, y] = orig = point
+  can_try_left = can_try_right = True
+  
+  while can_try_left or can_try_right:
+    can_try_left = x + left >= 0 and y + 1 < len(grid) and \
+      grid[y + 1][x + left] == "."
 
-  while y <= len(grid) and grid[y][x] == ".": 
-    [x, y], hit = drop_sand(grid, x, y)
-    if hit == "~":
-      raise AbyssReachedError
-    if grid[y][x] == ".":
-      okay_spot = [x, y]
-    x += xchange
-    y += 1
+    if can_try_left:
+      [x, y], hit = drop_sand(grid, x + left, y + 1)
+      if hit == "~":
+        raise AbyssReachedError
+      point = [x, y]
+      continue
 
-  return bool(okay_spot), okay_spot or point
+    can_try_right = x + right < len(grid[0]) and y + 1 < len(grid) and \
+      grid[y + 1][x + right] == "."
+
+    if can_try_right:
+      [x, y], hit = drop_sand(grid, x + right, y + 1)
+      if hit == "~":
+        raise AbyssReachedError
+      point = [x, y]
+      continue
+
+    y += 1; left -= 1; right += 1
+
+  return orig[1] != point[1], point
 
 def settle_sand(grid, point):
-  settled_left, new_left_spot = settle_sand_diagonally(grid, point, True)
-  settled_right, new_right_spot = settle_sand_diagonally(grid, point, False)
-
-  if settled_left:
-    return new_left_spot
-
-  if settled_right:
-    return new_right_spot
-
+  okay, new_spot = settle_sand_diagonally(grid, point)
+  if okay:
+    return new_spot
   return point
 
 def draw_rocks(path, grid, xoffset):
@@ -111,7 +119,7 @@ def draw_rocks(path, grid, xoffset):
     grid[y][x - xoffset] = "#"
     last = point[:]
 
-with open("example.txt") as file:
+with open("input.txt") as file:
   paths = []
   for line in file.readlines():
     paths.append(parse_path(line.strip()))
@@ -125,5 +133,5 @@ with open("example.txt") as file:
 
   grains = drop_sand_loop(grid, xmin)
 
-  print("Settled grains", grains)
   print_grid(grid)
+  print("Grains landed", grains)
