@@ -104,8 +104,7 @@ def settle_sand_diagonally(grid, point):
     if can_try_right:
       [x, y], hit = drop_sand(grid, x + right, y + 1)
       if hit == "~":
-        break
-        #raise AbyssReached
+        raise AbyssReached
       point = [x, y]
       continue
 
