@@ -5,7 +5,7 @@ PART_TWO = len(sys.argv) > 1
 drop_x = 500
 
 if PART_TWO:
-  max_width = 328 # Good number to crop to. See output.txt
+  max_width = 328 # Good number to crop to. See part_two_result.txt
 
 class AbyssReached(Exception):
   pass
