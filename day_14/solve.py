@@ -33,7 +33,6 @@ def create_grid(path):
       row.append(".")
     grid.append(row)
   
-  #print(xmin, xmax)
   return grid, xmin
 
 def print_grid(grid):
@@ -44,63 +43,48 @@ def print_grid(grid):
     i += 1
   print(canvas)
 
-def drop_sand_loop(grid, xoffset):
-  for _ in range(int(sys.argv[1])):
+def drop_sand_loop(grid, xoffset, grains):
+  for _ in range(grains):
     [x, y], hit = drop_sand(grid, 500-xoffset)
     if hit == "o":
-      x, y = settle_sand_at(grid, [x, y])
+      x, y = settle_sand(grid, [x, y])
     grid[y][x] = "o"
 
 def drop_sand(grid, x=0, y=0):
   for row in grid[y:]:
     cell = row[x] 
-    if cell == "#":
-      return [x, y-1], cell
-    if cell == "o":
+    if cell != ".":
       return [x, y-1], cell
     y += 1
 
-def no_rocks_above(grid, x, y):
-  for _y in range(y, -1, -1):
-    if grid[_y][x] == "#":
-      return False
-  return True
+def settle_sand_diagonally(grid, point, left):
+  xchange = -1 if left else 1
+  x, y = point[0] + xchange, point[1] + 1
+  okay_spot = None
 
-def settle_sand_at(grid, point):
-  x, y = point
-  i = 1
-  last_empty = None
-  no_dl = no_dr = False
   try:
-    while True:
-      # diagonal left
-      dl_hit = grid[y+i][x-i]
-      # if diagonal left is empty, and below that is a rock, we're good
-      if not no_dl and dl_hit == ".":
-        [_x, _y], hit = drop_sand(grid, x-i, y+i)
-        if hit == "#":
-          x, y = [_x, _y]
-      if not no_dl and dl_hit == "#":
-        no_dl = True
-
-      # diagonal right
-      dr_hit = grid[y+i][x+i] 
-      # if diagonal right is empty, and below that is a rock, we're good
-      if not no_dr and dr_hit == ".":
-        [_x, _y], hit = drop_sand(grid, x+i, y+i)
-        if hit == "#":
-          x, y = [_x, _y]
-      if not no_dr and dr_hit == "#":
-        no_dr = True
-      
-      if no_dr and dr_hit == ".":
-        last_empty = [x+i, y+i]
-      if no_dl and dl_hit == ".":
-        last_empty = [x-i, y+i]
-
-      i += 1
+    while grid[y][x] == ".": 
+      [x, y], hit = drop_sand(grid, x, y)
+      if grid[y][x] == ".":
+        okay_spot = [x, y]
+      x += xchange
+      y += 1
   except:
-    return [x,y]
+    pass
+
+  return bool(okay_spot), okay_spot or point
+
+def settle_sand(grid, point):
+  settled_left, new_left_spot = settle_sand_diagonally(grid, point, True)
+  settled_right, new_right_spot = settle_sand_diagonally(grid, point, False)
+
+  if settled_left:
+    return new_left_spot
+
+  if settled_right:
+    return new_right_spot
+
+  return point
 
 def draw_rocks(path, grid, xoffset):
   last = None
@@ -127,6 +111,6 @@ with open("example.txt") as file:
   for point in paths:
     draw_rocks(point, grid, xmin)
 
-  drop_sand_loop(grid, xmin)
+  drop_sand_loop(grid, xmin, int(sys.argv[1]))
 
   print_grid(grid)
