@@ -10,15 +10,15 @@ class Node():
     self.next.prev = self.prev
     self.prev.next = self.next
 
-  def attach(self, node, before):
-    if before:
-      self.next = node
-      self.prev = node.prev
-      node.prev.next = node.prev = self
-    else:
-      self.prev = node
-      self.next = node.next
-      node.next.prev = node.next = self
+  def insert_before(self, node):
+    self.prev = node
+    self.next = node.next
+    node.next.prev = node.next = self
+
+  def insert_after(self, node):
+    self.next = node
+    self.prev = node.prev
+    node.prev.next = node.prev = self
 
   def get_node(self, distance):
     node = self
@@ -37,7 +37,10 @@ def mix(node):
   if node.value:
     node.detach()
     other = node.get_node(node.value)
-    node.attach(other, node.value < 0)
+    if node.value < 0:
+      node.insert_after(other)
+    else:
+      node.insert_before(other)
 
 def zero_node(node):
   while node.value != 0:
