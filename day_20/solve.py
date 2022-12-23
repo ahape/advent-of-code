@@ -1,8 +1,46 @@
-grove_indexes = [1000, 2000, 3000]
+class LinkedList():
+  def __init__(self):
+    self.nodes = []
+    self.first = None
+    self.last = None
+    self.zero = None
+
+  def add(self, node):
+    if node.mix_value == 0:
+      self.zero = node
+    if not self.first:
+      self.first = node
+      self.last = node
+    self.last.next = node
+    self.first.prev = node
+    node.prev = self.last
+    node.next = self.first
+    self.last = node
+    self.nodes.append(node)
+
+  def mix(self, times):
+    for _ in range(times):
+      for node in self.nodes:
+        if node != self.zero:
+          other = node.get(node.mix_value)
+          if node.mix_value < 0:
+            node.insert_after(other)
+          else:
+            node.insert_before(other)
+
+def detached(fn):
+  def wrapped(*args):
+    args[0].detach()
+    ret = fn(*args)
+    args[0].attach()
+    return ret
+  return wrapped
 
 class Node():
-  def __init__(self, val):
-    self.value = int(val)
+  def __init__(self, val, key):
+    val = int(val)
+    self.mix_value = val
+    self.value = val * key
     self.prev = None
     self.next = None
 
@@ -10,17 +48,22 @@ class Node():
     self.next.prev = self.prev
     self.prev.next = self.next
 
+  def attach(self):
+    self.prev.next = self
+    self.next.prev = self
+
+  @detached
   def insert_before(self, node):
     self.prev = node
     self.next = node.next
-    node.next.prev = node.next = self
 
+  @detached
   def insert_after(self, node):
     self.next = node
     self.prev = node.prev
-    node.prev.next = node.prev = self
 
-  def get_node(self, distance):
+  @detached
+  def get(self, distance):
     node = self
     move_left = distance < 0
     while distance:
@@ -30,61 +73,22 @@ class Node():
       distance += (1 if move_left else -1)
     return node
 
-  def __repr__(self):
-    return str(self.value)
+def get_coords(nodes, zero):
+  one = zero.get(1000)
+  two = one.get(1000)
+  three = two.get(1000)
+  return [one.value, two.value, three.value]
 
-def mix(node):
-  if node.value:
-    node.detach()
-    other = node.get_node(node.value)
-    if node.value < 0:
-      node.insert_after(other)
-    else:
-      node.insert_before(other)
-
-def zero_node(node):
-  while node.value != 0:
-    node = node.next
-  return node
-
-def grove_coords(nodes, zero):
-  to_add = []
-  cur = zero
-  for i in range(max(grove_indexes) + 1):
-    if i in grove_indexes:
-      to_add.append(cur.value)
-    cur = cur.next
-  return to_add
-
-def print_coords(nodes, node):
-  actual = []
-  for i in range(len(nodes)):
-    actual.append(node.value)
-    node = node.next
-  print("What's there", actual)
-
-def create_nodes(file):
-  nodes = []
-  prev = cur = None
+def create_nodes(file, decryption_key=1):
+  linked = LinkedList()
   for line in file.readlines():
-    cur = Node(line.strip())
-    if prev:
-      cur.prev = prev
-      prev.next = cur
-    nodes.append(cur)
-    prev = cur
-  nodes[0].prev = cur
-  cur.next = prev
-  return nodes
+    linked.add(Node(line.strip(), decryption_key))
+  return linked
 
 with open("input.txt", "r") as file:
-  nodes = create_nodes(file)
+  linked = create_nodes(file)
+  linked.mix(1)
 
-  for entry in nodes:
-    mix(entry)
-    #print_coords(nodes, entry)
+  coords = get_coords(linked.nodes, linked.zero)
 
-  to_add = grove_coords(nodes, zero_node(nodes[0]))
-  summed = sum(to_add)
-  #assert 3 == summed, (to_add, summed)
-  assert 8764 == summed, (to_add, summed)
+  print(sum(coords))
