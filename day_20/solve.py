@@ -1,49 +1,78 @@
 grove_indexes = [1000, 2000, 3000]
-uid = 0
 
-class Entry():
+class Link():
   def __init__(self, val):
     self.value = int(val)
-    self.is_zero = self.value == 0
+    self.prev = None
+    self.next = None
   def __repr__(self):
     return str(self.value)
 
-def parse_line(line):
-  return Entry(line)
+def mix(link):
+  left = link.value < 0
+  last = link
+  old_prev = link.prev
+  old_next = link.next
 
-def mix(coords, entry, boundary):
-  current_i = coords.index(entry)
-  i = abs(current_i + entry.value) % boundary
+  if not link.value:
+    return
 
-  if entry.value < 0:
-    i = boundary - i
+  for _ in range(abs(link.value)):
+    last = last.prev if left else last.next
 
-  if current_i != i:
-    if current_i < i:
-      coords.remove(entry)
+  if left:
+    link.next = last
+    link.prev = last.prev
+    last.prev.next = last.prev = link
+  else:
+    link.prev = last
+    link.next = last.next
+    last.next.prev = last.next = link
 
-    coords.insert(i, Entry(entry.value))
+  old_prev.next = old_next
+  old_next.prev = old_prev
 
-    if current_i > i:
-      coords.remove(entry)
+def zero_link(coords):
+  return [e for i, e in enumerate(coords) if e.value == 0][0]
 
+def grove_coords(coords, zero):
+  to_add = []
+  cur = zero
+  for i in range(max(grove_indexes) + 1):
+    if i in grove_indexes:
+      to_add.append(cur.value)
+    cur = cur.next
+  return to_add
+
+def print_coords(coords, link):
+  actual = []
+  for i in range(len(coords)):
+    actual.append(link.value)
+    link = link.next
+  print("What's there", actual)
+
+def create_linked(file):
+  coords = []
+  prev = cur = None
+  for line in file.readlines():
+    cur = Link(line.strip())
+    if prev:
+      cur.prev = prev
+      prev.next = cur
+    coords.append(cur)
+    prev = cur
+  coords[0].prev = cur
+  cur.next = prev
   return coords
 
 with open("example.txt", "r") as file:
-  coords = []
-  for line in file.readlines():
-    coords.append(parse_line(line.strip()))
+  coords = create_linked(file)
 
-  leng, mixed = len(coords), coords[:]
   for entry in coords:
-    mixed = mix(mixed, entry, leng-1)
-    #print(entry, mixed)
+    mix(entry)
+    #print_coords(coords, entry)
 
-  nums = [x.value for x in mixed]
-  to_add = []
-  zero_i = [i for i, e in enumerate(mixed) if e.value == 0][0]
-
-  for i in grove_indexes:
-    to_add.append(nums[(zero_i + i) % leng])
-
-  print(to_add, sum(to_add))
+  to_add = grove_coords(coords, zero_link(coords))
+  summed = sum(to_add)
+  assert 3 == summed, (to_add, summed)
+  #assert 8764 == summed, (to_add, summed)
