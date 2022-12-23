@@ -1,3 +1,5 @@
+import sys
+
 class LinkedList():
   def __init__(self):
     self.nodes = []
@@ -18,8 +20,8 @@ class LinkedList():
     self.last = node
     self.nodes.append(node)
 
-  def mix(self, times):
-    for _ in range(times):
+  def mix(self, rounds):
+    for _ in range(rounds):
       for node in self.nodes:
         if node != self.zero:
           other = node.get(node.mix_value)
@@ -85,9 +87,15 @@ def create_nodes(file, decryption_key=1):
     linked.add(Node(line.strip(), decryption_key))
   return linked
 
+def parse_args():
+  if len(sys.argv) == 3:
+    return (int(sys.argv[1]), int(sys.argv[2]))
+  return (1,1)
+
 with open("input.txt", "r") as file:
-  linked = create_nodes(file)
-  linked.mix(1)
+  rounds, decryption_key = parse_args()
+  linked = create_nodes(file, decryption_key)
+  linked.mix(rounds)
 
   coords = get_coords(linked.nodes, linked.zero)
 
