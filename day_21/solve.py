@@ -7,17 +7,20 @@ def add_to_queue(monkey, job):
   job.pending.append(monkey)
 
 def resolve(monkey, value):
-  for jobs in job_queue[monkey]:
+  if monkey not in job_queue:
+    return
+  for job in job_queue[monkey][:]:
     for i, part in enumerate(job.desc[:]):
       job.desc[i] = value if part == monkey else part
-    remove_from_queue(monkey, job)
-
-def remove_from_queue(monkey, job):
-  job_queue[monkey].remove(job)
-  job.pending.append(monkey)
+    if monkey in job.pending:
+      job.pending.remove(monkey)
+    if job.is_resolved():
+      job.compute()
+      job_queue[monkey].remove(job)
 
 class Job():
-  def __init__(self, desc):
+  def __init__(self, monkey, desc):
+    self.monkey = monkey
     self.desc = desc
     self.pending = []
     self.value = None
@@ -36,22 +39,49 @@ class Job():
         add_to_queue(b, self)
 
   def __repr__(self):
-    return f"{self.desc} [{'pending' if len(self.pending) else 'resolved'}]"
+    return f"\n{self.monkey}:{self.desc} [{'pending' if len(self.pending) else 'resolved'}]"
 
-def parse_line(line):
+  def is_resolved(self):
+    return not len(self.pending)
+
+  def compute(self):
+    a, operator, b = self.desc
+    if operator == "+":
+      self.value = int(a) + int(b)
+    if operator == "-":
+      self.value = int(a) - int(b)
+    if operator == "*":
+      self.value = int(a) * int(b)
+    if operator == "/":
+      self.value = int(a) // int(b)
+
+def parse_job(line):
   monkey, desc = line.split(":")
   desc = desc.strip().split(" ")
-  return (monkey, Job(desc))
+  return Job(monkey, desc)
 
 def try_parse_int(s):
   try:
     return int(s), True
   except ValueError:
-    return None, False
+    return s, False
 
-with open("example.txt", "r") as file:
-  lines = []
+with open("input.txt", "r") as file:
+  jobs = []
   for line in file.readlines():
-    lines.append(parse_line(line.strip()))
+    jobs.append(parse_job(line.strip()))
 
-  print(lines)
+  jobs = sorted(jobs, key=lambda job: len(job.pending))
+  root = None
+  while not root:
+    for job in jobs:
+      if job.is_resolved():
+        if job.monkey == "root":
+          root = job
+        resolve(job.monkey, job.value)
+    jobs = sorted(jobs, key=lambda job: len(job.pending))
+
+  # 0 = -1, 150
+  print(root.desc)
+  #assert root.value == 152, root.value
+  print(root.value)
