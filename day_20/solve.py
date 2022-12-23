@@ -97,6 +97,8 @@ def create_nodes(file, decryption_key=1):
     linked.add(Node(line.strip(), decryption_key))
   return linked
 
+# Part 1: `py solve.py`
+# Part 2: `py solve.py 10 811589153`
 def parse_args():
   if len(sys.argv) == 3:
     return (int(sys.argv[1]), int(sys.argv[2]))
