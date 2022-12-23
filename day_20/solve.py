@@ -1,50 +1,61 @@
-import sys
+import sys, time
+
+start = time.time()
 
 class LinkedList():
   def __init__(self):
     self.nodes = []
+    self.length = 0
     self.first = None
     self.last = None
     self.zero = None
 
+  def __repr__(self):
+    return f"[{','.join([*map(str, self.nodes)])}]"
+
   def add(self, node):
-    if node.mix_value == 0:
+    if node.value == 0:
       self.zero = node
     if not self.first:
       self.first = node
       self.last = node
     self.last.next = node
     self.first.prev = node
+    node.list = self
     node.prev = self.last
     node.next = self.first
     self.last = node
     self.nodes.append(node)
+    self.length += 1
 
   def mix(self, rounds):
-    for _ in range(rounds):
+    for i in range(rounds):
       for node in self.nodes:
         if node != self.zero:
-          other = node.get(node.mix_value)
-          if node.mix_value < 0:
+          other = node.get(node.value)
+          if node.value < 0:
             node.insert_after(other)
           else:
             node.insert_before(other)
+      print(f"Mixed nodes ({i+1})", time.time() - start)
 
-def detached(fn):
-  def wrapped(*args):
-    args[0].detach()
-    ret = fn(*args)
-    args[0].attach()
+def detach_then_reattach(fn):
+  def wrapped(node, *args):
+    node.detach()
+    ret = fn(node, *args)
+    node.attach()
     return ret
   return wrapped
 
 class Node():
   def __init__(self, val, key):
-    val = int(val)
-    self.mix_value = val
-    self.value = val * key
+    self.value = int(val) * key
     self.prev = None
     self.next = None
+    self.list = None
+
+  def __str__(self):
+    return str(self.value)
 
   def detach(self):
     self.next.prev = self.prev
@@ -54,32 +65,31 @@ class Node():
     self.prev.next = self
     self.next.prev = self
 
-  @detached
+  @detach_then_reattach
   def insert_before(self, node):
     self.prev = node
     self.next = node.next
 
-  @detached
+  @detach_then_reattach
   def insert_after(self, node):
     self.next = node
     self.prev = node.prev
 
-  @detached
+  @detach_then_reattach
   def get(self, distance):
     node = self
     move_left = distance < 0
+    # `-1` because this node will be detached
+    distance = abs(distance) % (node.list.length-1)
     while distance:
       node = node.prev if move_left else node.next
-      if node == self:
-        continue
-      distance += (1 if move_left else -1)
+      distance -= 1
     return node
 
-def get_coords(nodes, zero):
-  one = zero.get(1000)
-  two = one.get(1000)
-  three = two.get(1000)
-  return [one.value, two.value, three.value]
+def get_coords(linked):
+  return [linked.zero.get(1000).value,
+          linked.zero.get(2000).value,
+          linked.zero.get(3000).value]
 
 def create_nodes(file, decryption_key=1):
   linked = LinkedList()
@@ -95,8 +105,9 @@ def parse_args():
 with open("input.txt", "r") as file:
   rounds, decryption_key = parse_args()
   linked = create_nodes(file, decryption_key)
+  print("Created nodes", time.time() - start)
   linked.mix(rounds)
-
-  coords = get_coords(linked.nodes, linked.zero)
-
-  print(sum(coords))
+  #print(linked)
+  coords = get_coords(linked)
+  print("Acquired coordinates", time.time() - start)
+  print("Answer:", sum(coords))
