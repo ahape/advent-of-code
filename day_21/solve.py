@@ -4,71 +4,72 @@ def add_to_queue(monkey, job):
   if monkey not in job_queue:
     job_queue[monkey] = []
   job_queue[monkey].append(job)
-  job.pending.append(monkey)
+  job.waiting_on.append(monkey)
 
-def resolve(j):
-  monkey, value = j.monkey, j.value
+def notify_monkeys_waiting(j):
+  monkey, result = j.monkey, j.result
   if monkey not in job_queue:
     return
   for job in job_queue[monkey][:]:
-    for i, part in enumerate(job.desc[:]):
-      job.desc[i] = value if part == monkey else part
-    if monkey in job.pending:
-      job.pending.remove(monkey)
-    if job.is_resolved():
-      job.value = compute(*job.desc)
+    for i, e in enumerate(job.operation[:]):
+      if e == monkey:
+        job.operation[i] = result
+    if monkey in job.waiting_on:
+      job.waiting_on.remove(monkey)
+    if job.is_done():
+      job.result = compute(*job.operation)
       job_queue[monkey].remove(job)
 
 def compute(*args):
-  res = 0
+  result = 0
   pending_op = None
   for arg in args:
     num, is_num = try_parse_int(arg)
     if is_num:
       if pending_op:
         if pending_op == "+":
-          res += num
+          result += num
         if pending_op == "-":
-          res -= num
+          result -= num
         if pending_op == "*":
-          res *= num
+          result *= num
         if pending_op  == "/":
-          res //= num
+          result //= num
         pending_op = None
       else:
-        res += num
+        result += num
     else:
       pending_op = arg
-  return res
+  return result
 
 class Job():
-  def __init__(self, monkey, desc):
+  def __init__(self, monkey, operation):
     self.monkey = monkey
-    self.desc = desc
-    self.pending = []
-    self.value = None
-    a, a_is_int = try_parse_int(desc[0])
-    if len(desc) == 1:
+    self.operation = operation
+    self.waiting_on = []
+    self.result = None
+    a, a_is_int = try_parse_int(operation[0])
+    if len(operation) == 1:
       if a_is_int:
-        self.value = a
-    if self.value == None:
+        self.result = a
+    if self.result == None:
       if not a_is_int:
         add_to_queue(a, self)
-      _, operator, b = desc
+      _, operator, b = operation
       b, b_is_int = try_parse_int(b)
       if not b_is_int:
         add_to_queue(b, self)
 
-  def is_resolved(self):
-    return not len(self.pending)
+  def is_done(self):
+    return not len(self.waiting_on)
 
 def parse_job(line):
-  monkey, desc = line.split(":")
-  desc = desc.strip().split(" ")
-  return Job(monkey, desc)
+  monkey, operation = line.split(":")
+  operation = operation.strip().split(" ")
+  return Job(monkey, operation)
 
-def order_by_least_pending(jobs):
-  jobs.sort(key=lambda job: len(job.pending))
+def order_by_doneness(jobs):
+  jobs.sort(key=lambda job: len(job.waiting_on))
 
 def try_parse_int(s):
   try:
@@ -84,11 +85,11 @@ with open("input.txt", "r") as file:
       root = job
     jobs.append(job)
 
-  order_by_least_pending(jobs)
-  while not root.is_resolved():
+  order_by_doneness(jobs)
+  while not root.is_done():
     for job in jobs:
-      if job.is_resolved():
-        resolve(job)
-    order_by_least_pending(jobs)
+      if job.is_done():
+        notify_monkeys_waiting(job)
+    order_by_doneness(jobs)
 
-  print(root.value)
+  print(root.result)
