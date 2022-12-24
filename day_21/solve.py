@@ -19,16 +19,6 @@ def resolve(j):
       job.value = compute(*job.desc)
       job_queue[monkey].remove(job)
 
-def flatten(arr):
-  for item in arr:
-    if not isinstance(item, str):
-      try:
-        yield from flatten(item)
-      except TypeError:
-        yield item
-    else:
-      yield item
-
 def compute(*args):
   res = 0
   pending_op = None
