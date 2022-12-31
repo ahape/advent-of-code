@@ -145,9 +145,9 @@ def calc_password():
   facing = dirs.index(d)
   return row + column + facing
 
-with open("input2.txt", "r") as file:
+#with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
-#with open("example.txt", "r") as file:
+with open("example.txt", "r") as file:
   instructions = []
   for line in file.readlines():
     data, kind = parse_line(line.strip("\n"))
@@ -159,6 +159,14 @@ with open("input2.txt", "r") as file:
       instructions += data
 
   set_canvas_dimensions()
+
+
+  """
+  The hard part is figuring out how to fold the cube
+  But once we figure that out, we can determine what
+  sides meet (implicitly)
+  """
+
 
   for instr in instructions:
     if instr.direction == None:
