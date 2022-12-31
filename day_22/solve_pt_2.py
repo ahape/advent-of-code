@@ -3,6 +3,7 @@ canvas = []
 glyphs = ">v<^"
 dirs = "ESWN"
 dims = (0, 0)
+side_size = 4
 
 is_last = False
 
@@ -53,6 +54,38 @@ def render(file=None, instr=None):
     open(file, "w+").write(display)
   else:
     print(display)
+
+"""
+0000111122223333
+0000111122223333
+0000111122223333
+0000111122223333
+----------------
+4444555566667777
+4444555566667777
+4444555566667777
+4444555566667777
+...
+"""
+
+def get_sides():
+  sides = [[]] * 6
+  dic = dict()
+  ids = iter(range(1, 7))
+  for y, row in enumerate(canvas):
+    for x, cell in enumerate(row):
+      if cell != "X":
+        val = str((y // side_size * side_size) + (x // side_size))
+        if val not in dic:
+          dic[val] = str(next(ids))
+        draw_at(x, y, dic[val])
+
+def get_side(x, y):
+  pass
+
+def get_wrap_side(x, y, z, d):
+  pass
+
 
 def set_canvas_dimensions():
   global pos, dims
@@ -160,19 +193,26 @@ with open("example.txt", "r") as file:
 
   set_canvas_dimensions()
 
+  get_sides()
+  """
+  12     1 
+  3    234
+ 45      56
+ 6       
+    
+  
+  1       6
+ 4326    412
+  5       3
+  """
 
   """
-  The hard part is figuring out how to fold the cube
-  But once we figure that out, we can determine what
-  sides meet (implicitly)
-  """
-
-
   for instr in instructions:
     if instr.direction == None:
       is_last = True
     do_instruction(instr)
-
 render("output.txt", instructions)
-
 print("Password", calc_password(), pos)
+  """
+
+render()
