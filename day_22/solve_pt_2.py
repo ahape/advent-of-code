@@ -5,6 +5,26 @@ dirs = "ESWN"
 dims = (0, 0)
 side_size = 4
 
+next_side = {}
+
+if side_size == 4:
+  next_side["1N"] = "2N"
+  next_side["1E"] = "6W"
+  next_side["1W"] = "3S"
+  next_side["2N"] = "1S"
+  next_side["2S"] = "5N"
+  next_side["2W"] = "6N"
+  next_side["3N"] = "1E"
+  next_side["3S"] = "5E"
+  next_side["4E"] = "6S"
+  next_side["5S"] = "2S"
+  next_side["5W"] = "3N"
+  next_side["6N"] = "4W"
+  next_side["6S"] = "2W"
+  next_side["6E"] = "1W"
+else:
+  pass
+
 is_last = False
 
 class Instruction():
@@ -68,9 +88,8 @@ def render(file=None, instr=None):
 ...
 """
 
-def get_sides():
-  sides = [[]] * 6
-  dic = dict()
+def get_side(target_x, target_y):
+  dic = {}
   ids = iter(range(1, 7))
   for y, row in enumerate(canvas):
     for x, cell in enumerate(row):
@@ -78,14 +97,44 @@ def get_sides():
         val = str((y // side_size * side_size) + (x // side_size))
         if val not in dic:
           dic[val] = str(next(ids))
-        draw_at(x, y, dic[val])
+        if x == target_x and y == target_y:
+          return dic[val]
 
-def get_side(x, y):
-  pass
+def get_wrap_pos(from_x, from_y, z, to_d):
+  dic = {}
+  ids = iter(range(1, 7))
+  top_left = None
+  for y, row in enumerate(canvas):
+    for x, cell in enumerate(row):
+      if cell != "X":
+        val = str((y // side_size * side_size) + (x // side_size))
+        if val not in dic:
+          dic[val] = str(next(ids))
+        if dic[val][0] == z:
+          top_left = (x, y)
+          break
+    if top_left:
+      break
+  x, y = top_left
+  if to_d == "N":
+    x += from_x // side_size
+    y += side_size-1
+  elif to_d == "S":
+    x += from_x // side_size
+  elif to_d == "W":
+    x += side_size-1
+    y += from_y // side_size
+  elif to_d == "E":
+    y += from_y // side_size
+  return x, y
 
-def get_wrap_side(x, y, z, d):
-  pass
-
+def get_wrap_pos_and_dir(x, y, d):
+  side = get_side(x, y)
+  side, d = next_side[side + d]
+  x, y = get_wrap_pos(x, y, side, d)
+  if canvas[y][x] == "#":
+    return (None, None, None)
+  return x, y, d
 
 def set_canvas_dimensions():
   global pos, dims
@@ -139,8 +188,7 @@ def do_instruction(instr):
     return (x, y)
   x, y, d = pos
   #print(pos, instr)
-  g = get_glyph(d)
-  draw_at(x, y, g)
+  draw_at(x, y, get_glyph(d))
   for n in range(1, instr.distance + 1):
     if d in "NS":
       y = y - 1 if d == "N" else y + 1
@@ -148,17 +196,19 @@ def do_instruction(instr):
       x = x - 1 if d == "W" else x + 1
     if x == dims[0] or y == dims[1] or \
        x < 0 or y < 0 or canvas[y][x] == "X":
-      a, b = find_wrap_point(x, y, d)
-      if (a, b) == (None, None):
+      px, py = restore_prev(x, y)
+      a, b, c = get_wrap_pos_and_dir(px, py, d)
+      if (a, b, c) == (None, None, None):
         x, y = restore_prev(x, y)
         break
-      x, y = a, b
+      x, y, d = a, b, c
     elif canvas[y][x] == "#":
       x, y = restore_prev(x, y)
       break
-    draw_at(x, y, g)
+    draw_at(x, y, get_glyph(d))
 
   if instr.direction: # `None` delineates the end
+    """
     if d == "N":
       d = "E" if instr.direction == "R" else "W"
     elif d == "E":
@@ -167,6 +217,7 @@ def do_instruction(instr):
       d = "W" if instr.direction == "R" else "E"
     else:
       d = "N" if instr.direction == "R" else "S"
+    """
 
   draw_at(x, y, get_glyph(d))
   pos = (x, y, d)
@@ -193,7 +244,6 @@ with open("example.txt", "r") as file:
 
   set_canvas_dimensions()
 
-  get_sides()
   """
   12     1 
   3    234
@@ -205,6 +255,20 @@ with open("example.txt", "r") as file:
  4326    412
   5       3
   """
+  # testing
+  """
+  for y, row in enumerate(canvas):
+    for x, cell in enumerate(row):
+      side = get_side(x, y)
+      if side:
+        draw_at(x, y, side)
+  """
+  # A works
+  pos = (11, 5, "E")
+  instr = Instruction()
+  instr.direction = "E"
+  instr.distance = 5
+  do_instruction(instr)
 
   """
   for instr in instructions:
