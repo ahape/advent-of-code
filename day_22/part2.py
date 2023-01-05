@@ -101,6 +101,10 @@ def get_side(target_x, target_y):
           return dic[val]
 
 def get_wrap_pos(from_x, from_y, z, to_d):
+  def mirror(p):
+    i = [0,1,2,3].index(p)
+    return [3,2,1,0][p]
+
   dic = {}
   ids = iter(range(1, 7))
   top_left = None
@@ -117,7 +121,7 @@ def get_wrap_pos(from_x, from_y, z, to_d):
       break
   x, y = top_left
   if to_d == "N":
-    x += from_x % (side_size-1)
+    x += mirror(from_x // side_size)
     y += side_size-1
   elif to_d == "S":
     x += from_x // side_size
@@ -125,7 +129,7 @@ def get_wrap_pos(from_x, from_y, z, to_d):
     x += side_size-1
     y += from_y // side_size
   elif to_d == "E":
-    y += from_y // side_size
+    y += mirror(from_y // side_size)
   return x, y
 
 def get_wrap_pos_and_dir(x, y, d):
@@ -245,6 +249,14 @@ def test_2():
   instr.distance = 4
   do_instruction(instr)
 
+def test_3():
+  global pos
+  pos = (6, 4, "N")
+  instr = Instruction()
+  instr.direction = "N"
+  instr.distance = 3
+  do_instruction(instr)
+
 #with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
 with open("example.txt", "r") as file:
@@ -279,7 +291,7 @@ with open("example.txt", "r") as file:
       if side:
         draw_at(x, y, side)
   """
-  test_2()
+  test_3()
 
   """
   for instr in instructions:
