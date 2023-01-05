@@ -1,13 +1,13 @@
-pos = None
+POS = None
 canvas = []
-glyphs = ">v<^"
-dirs = "ESWN"
-dims = (0, 0)
-side_size = 4
+GLYPHS = ">v<^"
+DIRS = "ESWN"
+DIMS = (0, 0)
+SIDE_SIZE = 4
 
 next_side = {}
 
-if side_size == 4:
+if SIDE_SIZE == 4:
   next_side["1N"] = "2N"
   next_side["1E"] = "6W"
   next_side["1W"] = "3S"
@@ -25,10 +25,12 @@ if side_size == 4:
 else:
   pass
 
-is_last = False
-is_first = True
-
 class Instruction():
+  """
+  Represents an instruction.
+  When an instruction is executed, the distance is traveled,
+  and then the cursor turns to the direction
+  """
   def __init__(self):
     self.direction = None
     self.distance = 0
@@ -40,54 +42,42 @@ class Instruction():
     return self.__str__()
 
 def parse_instructions(instructions_raw):
-  instructions = []
+  builder = []
   instruction = Instruction()
   distance = ""
   for e in instructions_raw:
-    if e == "L" or e == "R":
+    if e in ("L", "R"):
       instruction.distance += int(distance)
       distance = ""
       instruction.direction = e
-      instructions.append(instruction)
+      builder.append(instruction)
       instruction = Instruction()
     else:
       distance += e
   instruction.direction = None
   instruction.distance = int(distance)
-  instructions.append(instruction)
-  return instructions
+  builder.append(instruction)
+  return builder
 
-def parse_line(line):
-  if not line.strip():
+def parse_line(raw_line):
+  if not raw_line.strip():
     return (None, "empty")
 
-  line = line.replace(" ", "X")
+  raw_line = raw_line.replace(" ", "X")
 
-  if "L" in line or "R" in line:
-    return (parse_instructions(line), "instructions")
-  return (line, "row")
+  if "L" in raw_line or "R" in raw_line:
+    return (parse_instructions(raw_line), "instructions")
+  return (raw_line, "row")
 
-def render(file=None, instr=None):
+def render(filename=None, instr=None):
   display = "\n".join(canvas)
-  if file:
+  if filename:
     if instr:
       display += "\n===\n" + "\n".join([*map(str,instr)])
-    open(file, "w+").write(display)
+    with open(filename, "w+", encoding="UTF-8") as output_file:
+      output_file.write(display)
   else:
     print(display)
-
-"""
-0000111122223333
-0000111122223333
-0000111122223333
-0000111122223333
-----------------
-4444555566667777
-4444555566667777
-4444555566667777
-4444555566667777
-...
-"""
 
 def get_side(target_x, target_y):
   dic = {}
@@ -95,15 +85,15 @@ def get_side(target_x, target_y):
   for y, row in enumerate(canvas):
     for x, cell in enumerate(row):
       if cell != "X":
-        val = str((y // side_size * side_size) + (x // side_size))
+        val = str((y // SIDE_SIZE * SIDE_SIZE) + (x // SIDE_SIZE))
         if val not in dic:
           dic[val] = str(next(ids))
         if x == target_x and y == target_y:
           return dic[val]
+  raise Exception("Uh oh")
 
 def get_wrap_pos(from_x, from_y, z, to_d):
   def mirror(p):
-    i = [0,1,2,3].index(p)
     return [3,2,1,0][p]
 
   dic = {}
@@ -112,7 +102,7 @@ def get_wrap_pos(from_x, from_y, z, to_d):
   for y, row in enumerate(canvas):
     for x, cell in enumerate(row):
       if cell != "X":
-        val = str((y // side_size * side_size) + (x // side_size))
+        val = str((y // SIDE_SIZE * SIDE_SIZE) + (x // SIDE_SIZE))
         if val not in dic:
           dic[val] = str(next(ids))
         if dic[val][0] == z:
@@ -122,15 +112,15 @@ def get_wrap_pos(from_x, from_y, z, to_d):
       break
   x, y = top_left
   if to_d == "N":
-    x += mirror(from_x // side_size)
-    y += side_size-1
+    x += mirror(from_x // SIDE_SIZE)
+    y += SIDE_SIZE-1
   elif to_d == "S":
-    x += from_x // side_size
+    x += from_x // SIDE_SIZE
   elif to_d == "W":
-    x += side_size-1
-    y += from_y // side_size
+    x += SIDE_SIZE-1
+    y += from_y // SIDE_SIZE
   elif to_d == "E":
-    y += mirror(from_y // side_size)
+    y += mirror(from_y // SIDE_SIZE)
   return x, y
 
 def get_wrap_pos_and_dir(x, y, d):
@@ -142,28 +132,28 @@ def get_wrap_pos_and_dir(x, y, d):
   return x, y, d
 
 def set_canvas_dimensions():
-  global pos, dims
-  _max = max([*map(lambda x: len(x), canvas)])
-  for y, line in enumerate(canvas):
-    canvas[y] += "X" * (_max - len(line))
-    if not pos:
-      for x, c in enumerate(line):
-        if not pos and c != "X" and c != "#":
-          pos = (x, y, "E")
-  dims = (len(canvas[0]), len(canvas))
+  mx = max([*map(len, canvas)])
+  npos = POS
+  for y, r in enumerate(canvas):
+    canvas[y] += "X" * (mx - len(r))
+    if not npos:
+      for x, c in enumerate(r):
+        if not npos and c != "X" and c != "#":
+          npos = (x, y, "E")
+  return npos, (len(canvas[0]), len(canvas))
 
 def draw_at(x, y, glyph, last=None, first=None):
   if last:
     glyph = "e"
   if first:
     glyph = "s"
-  line = list(canvas[y])
-  line[x] = glyph
-  canvas[y] = "".join(line)
+  row = list(canvas[y])
+  row[x] = glyph
+  canvas[y] = "".join(row)
 
 def find_wrap_point(x, y, d):
   if d == "N":
-    y = dims[1] - 1
+    y = DIMS[1] - 1
     while canvas[y][x] == "X":
       y -= 1
   if d == "S":
@@ -171,7 +161,7 @@ def find_wrap_point(x, y, d):
     while canvas[y][x] == "X":
       y += 1
   if d == "W":
-    x = dims[0] - 1
+    x = DIMS[0] - 1
     while canvas[y][x] == "X":
       x -= 1
   if d == "E":
@@ -183,27 +173,26 @@ def find_wrap_point(x, y, d):
   return (x, y)
 
 def get_glyph(d):
-  return glyphs["ESWN".index(d)]
+  return GLYPHS["ESWN".index(d)]
 
-def do_instruction(instr):
-  global pos, is_first
+def do_instruction(instr, pos, first=None, last=None):
   def restore_prev(x, y):
     if d in "NS":
       y = y + 1 if d == "N" else y - 1
     else:
       x = x + 1 if d == "W" else x - 1
     return (x, y)
+
   x, y, d = pos
-  #print(pos, instr)
-  draw_at(x, y, get_glyph(d), first=is_first)
-  if is_first:
-    is_first = False
-  for n in range(1, instr.distance + 1):
+
+  draw_at(x, y, get_glyph(d), first=first)
+
+  for _ in range(1, instr.distance + 1):
     if d in "NS":
       y = y - 1 if d == "N" else y + 1
     else:
       x = x - 1 if d == "W" else x + 1
-    if x == dims[0] or y == dims[1] or \
+    if x == DIMS[0] or y == DIMS[1] or \
        x < 0 or y < 0 or canvas[y][x] == "X":
       px, py = restore_prev(x, y)
       a, b, c = get_wrap_pos_and_dir(px, py, d)
@@ -226,43 +215,58 @@ def do_instruction(instr):
     else:
       d = "N" if instr.direction == "R" else "S"
 
-  draw_at(x, y, get_glyph(d), last=is_last)
-  pos = (x, y, d)
+  draw_at(x, y, get_glyph(d), last=last)
+
+  return (x, y, d)
 
 def calc_password():
-  x, y, d = pos
+  x, y, d = POS
   row = (y + 1) * 1000
   column = (x + 1) * 4
-  facing = dirs.index(d)
+  facing = DIRS.index(d)
   return row + column + facing
 
 def test_1():
-  global pos
   pos = (11, 5, "E")
   instr = Instruction()
   instr.direction = "E"
   instr.distance = 5
-  do_instruction(instr)
+  return [instr], pos
 
 def test_2():
-  global pos
   pos = (10, 11, "S")
   instr = Instruction()
   instr.direction = "S"
   instr.distance = 4
-  do_instruction(instr)
+  return [instr], pos
 
 def test_3():
-  global pos
   pos = (6, 4, "N")
   instr = Instruction()
   instr.direction = "N"
   instr.distance = 3
-  do_instruction(instr)
+  return [instr], pos
+
+def exec_instructions():
+  is_first, is_last = True, False
+  npos = POS
+  for instr in instructions:
+    if instr.direction is None:
+      is_last = True
+    npos = do_instruction(instr, npos, first=is_first, last=is_last)
+    if is_first:
+      is_first = False
+
+def draw_regions():
+  for y, row in enumerate(canvas):
+    for x, _ in enumerate(row):
+      side = get_side(x, y)
+      if side:
+        draw_at(x, y, side)
 
 #with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
-with open("example.txt", "r") as file:
+with open("example.txt", "r", encoding="UTF-8") as file:
   instructions = []
   for line in file.readlines():
     data, kind = parse_line(line.strip("\n"))
@@ -273,26 +277,16 @@ with open("example.txt", "r") as file:
     if kind == "instructions":
       instructions += data
 
-  set_canvas_dimensions()
+  #instructions, POS = test_1()
+  POS, DIMS = set_canvas_dimensions()
 
-  """
-  # show sides with numbers
-  for y, row in enumerate(canvas):
-    for x, cell in enumerate(row):
-      side = get_side(x, y)
-      if side:
-        draw_at(x, y, side)
-  """
+  exec_instructions()
 
-  for instr in instructions[:]:
-    if instr.direction == None:
-      is_last = True
-    do_instruction(instr)
+  render()
 
-render()
-print("Password", calc_password(), pos)
+  print("Password", calc_password(), POS)
 
-"""
+"""Notes
   12     1 
   3    234
  45      56
@@ -302,4 +296,15 @@ print("Password", calc_password(), pos)
   1       6
  4326    412
   5       3
+
+0000111122223333
+0000111122223333
+0000111122223333
+0000111122223333
+----------------
+4444555566667777
+4444555566667777
+4444555566667777
+4444555566667777
+...
 """
