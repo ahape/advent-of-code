@@ -26,6 +26,7 @@ else:
   pass
 
 is_last = False
+is_first = True
 
 class Instruction():
   def __init__(self):
@@ -151,9 +152,11 @@ def set_canvas_dimensions():
           pos = (x, y, "E")
   dims = (len(canvas[0]), len(canvas))
 
-def draw_at(x, y, glyph):
-  if is_last:
-    glyph = "WENS"["<>^v".index(glyph)]
+def draw_at(x, y, glyph, last=None, first=None):
+  if last:
+    glyph = "e"
+  if first:
+    glyph = "s"
   line = list(canvas[y])
   line[x] = glyph
   canvas[y] = "".join(line)
@@ -183,7 +186,7 @@ def get_glyph(d):
   return glyphs["ESWN".index(d)]
 
 def do_instruction(instr):
-  global pos
+  global pos, is_first
   def restore_prev(x, y):
     if d in "NS":
       y = y + 1 if d == "N" else y - 1
@@ -192,7 +195,9 @@ def do_instruction(instr):
     return (x, y)
   x, y, d = pos
   #print(pos, instr)
-  draw_at(x, y, get_glyph(d))
+  draw_at(x, y, get_glyph(d), first=is_first)
+  if is_first:
+    is_first = False
   for n in range(1, instr.distance + 1):
     if d in "NS":
       y = y - 1 if d == "N" else y + 1
@@ -212,7 +217,6 @@ def do_instruction(instr):
     draw_at(x, y, get_glyph(d))
 
   if instr.direction: # `None` delineates the end
-    """
     if d == "N":
       d = "E" if instr.direction == "R" else "W"
     elif d == "E":
@@ -221,9 +225,8 @@ def do_instruction(instr):
       d = "W" if instr.direction == "R" else "E"
     else:
       d = "N" if instr.direction == "R" else "S"
-    """
 
-  draw_at(x, y, get_glyph(d))
+  draw_at(x, y, get_glyph(d), last=is_last)
   pos = (x, y, d)
 
 def calc_password():
@@ -273,6 +276,23 @@ with open("example.txt", "r") as file:
   set_canvas_dimensions()
 
   """
+  # show sides with numbers
+  for y, row in enumerate(canvas):
+    for x, cell in enumerate(row):
+      side = get_side(x, y)
+      if side:
+        draw_at(x, y, side)
+  """
+
+  for instr in instructions[:]:
+    if instr.direction == None:
+      is_last = True
+    do_instruction(instr)
+
+render()
+print("Password", calc_password(), pos)
+
+"""
   12     1 
   3    234
  45      56
@@ -282,24 +302,4 @@ with open("example.txt", "r") as file:
   1       6
  4326    412
   5       3
-  """
-  # testing
-  """
-  for y, row in enumerate(canvas):
-    for x, cell in enumerate(row):
-      side = get_side(x, y)
-      if side:
-        draw_at(x, y, side)
-  """
-  test_3()
-
-  """
-  for instr in instructions:
-    if instr.direction == None:
-      is_last = True
-    do_instruction(instr)
-render("output.txt", instructions)
-print("Password", calc_password(), pos)
-  """
-
-render()
+"""
