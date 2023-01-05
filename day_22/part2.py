@@ -229,6 +229,14 @@ def calc_password():
   facing = dirs.index(d)
   return row + column + facing
 
+def test_1():
+  global pos
+  pos = (11, 5, "E")
+  instr = Instruction()
+  instr.direction = "E"
+  instr.distance = 5
+  do_instruction(instr)
+
 #with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
 with open("example.txt", "r") as file:
@@ -263,12 +271,7 @@ with open("example.txt", "r") as file:
       if side:
         draw_at(x, y, side)
   """
-  # A works
-  pos = (11, 5, "E")
-  instr = Instruction()
-  instr.direction = "E"
-  instr.distance = 5
-  do_instruction(instr)
+  test_1()
 
   """
   for instr in instructions:
