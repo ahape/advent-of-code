@@ -17,7 +17,7 @@ if side_size == 4:
   next_side["3N"] = "1E"
   next_side["3S"] = "5E"
   next_side["4E"] = "6S"
-  next_side["5S"] = "2S"
+  next_side["5S"] = "2N"
   next_side["5W"] = "3N"
   next_side["6N"] = "4W"
   next_side["6S"] = "2W"
@@ -117,7 +117,7 @@ def get_wrap_pos(from_x, from_y, z, to_d):
       break
   x, y = top_left
   if to_d == "N":
-    x += from_x // side_size
+    x += from_x % (side_size-1)
     y += side_size-1
   elif to_d == "S":
     x += from_x // side_size
@@ -237,6 +237,14 @@ def test_1():
   instr.distance = 5
   do_instruction(instr)
 
+def test_2():
+  global pos
+  pos = (10, 11, "S")
+  instr = Instruction()
+  instr.direction = "S"
+  instr.distance = 4
+  do_instruction(instr)
+
 #with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
 with open("example.txt", "r") as file:
@@ -271,7 +279,7 @@ with open("example.txt", "r") as file:
       if side:
         draw_at(x, y, side)
   """
-  test_1()
+  test_2()
 
   """
   for instr in instructions:
