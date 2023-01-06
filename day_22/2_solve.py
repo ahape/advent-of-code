@@ -3,27 +3,41 @@ canvas = []
 GLYPHS = ">v<^"
 DIRS = "ESWN"
 DIMS = (0, 0)
-SIDE_SIZE = 4
+#SIDE_SIZE = 4
+SIDE_SIZE = 50
 
 next_side = {}
 
 if SIDE_SIZE == 4:
-  next_side["1N"] = "2N"
-  next_side["1E"] = "6W"
-  next_side["1W"] = "3S"
-  next_side["2N"] = "1S"
-  next_side["2S"] = "5N"
-  next_side["2W"] = "6N"
-  next_side["3N"] = "1E"
-  next_side["3S"] = "5E"
-  next_side["4E"] = "6S"
-  next_side["5S"] = "2N"
-  next_side["5W"] = "3N"
-  next_side["6N"] = "4W"
-  next_side["6S"] = "2W"
-  next_side["6E"] = "1W"
+  next_side["1N"] = "2Nn"
+  next_side["1E"] = "6Wn"
+  next_side["1W"] = "3Sn"
+  next_side["2N"] = "1Sn"
+  next_side["2S"] = "5Nn"
+  next_side["2W"] = "6Nn"
+  next_side["3N"] = "1En"
+  next_side["3S"] = "5En"
+  next_side["4E"] = "6Sn"
+  next_side["5S"] = "2Nn"
+  next_side["5W"] = "3Nn"
+  next_side["6N"] = "4Wn"
+  next_side["6S"] = "2Wn"
+  next_side["6E"] = "1Wn"
 else:
-  pass
+  next_side["1N"] = "6En"
+  next_side["1W"] = "4Ey" #mirrored?
+  next_side["2N"] = "6Nn"
+  next_side["2E"] = "5Wy" #mirrored?
+  next_side["2S"] = "3Wn"
+  next_side["3E"] = "2Nn"
+  next_side["3W"] = "4Sn"
+  next_side["5E"] = "2Wy" #mirrored?
+  next_side["5S"] = "6Wn"
+  next_side["4N"] = "3En"
+  next_side["4W"] = "1Ey" #m?
+  next_side["6E"] = "5Nn"
+  next_side["6S"] = "2Sn"
+  next_side["6W"] = "1SN"
 
 class Instruction():
   """
@@ -90,12 +104,11 @@ def get_side(target_x, target_y):
           dic[val] = str(next(ids))
         if x == target_x and y == target_y:
           return dic[val]
-  raise Exception("Uh oh")
+  return None
 
-def get_wrap_pos(from_x, from_y, z, to_d):
+def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
   def mirror(p):
     return [3,2,1,0][p]
-
   dic = {}
   ids = iter(range(1, 7))
   top_left = None
@@ -112,21 +125,25 @@ def get_wrap_pos(from_x, from_y, z, to_d):
       break
   x, y = top_left
   if to_d == "N":
-    x += mirror(from_x // SIDE_SIZE)
+    n = from_x // SIDE_SIZE
+    x += mirror(n) if mirrored else n
     y += SIDE_SIZE-1
   elif to_d == "S":
-    x += from_x // SIDE_SIZE
+    n = from_x // SIDE_SIZE
+    x += mirror(n) if mirrored else n
   elif to_d == "W":
     x += SIDE_SIZE-1
-    y += from_y // SIDE_SIZE
+    n = from_y // SIDE_SIZE
+    y += mirror(n) if mirrored else n
   elif to_d == "E":
-    y += mirror(from_y // SIDE_SIZE)
+    n = from_y // SIDE_SIZE
+    y += mirror(n) if mirrored else n
   return x, y
 
 def get_wrap_pos_and_dir(x, y, d):
   side = get_side(x, y)
-  side, d = next_side[side + d]
-  x, y = get_wrap_pos(x, y, side, d)
+  side, d, m = next_side[side + d]
+  x, y = get_wrap_pos(x, y, side, d, m == "y")
   if canvas[y][x] == "#":
     return (None, None, None)
   return x, y, d
@@ -154,6 +171,7 @@ def draw_at(x, y, glyph, last=None, first=None):
 def find_wrap_point(x, y, d):
   if d == "N":
     y = DIMS[1] - 1
+
     while canvas[y][x] == "X":
       y -= 1
   if d == "S":
@@ -175,7 +193,11 @@ def find_wrap_point(x, y, d):
 def get_glyph(d):
   return GLYPHS["ESWN".index(d)]
 
+happened = False
+
 def do_instruction(instr, pos, first=None, last=None):
+  global happened
+
   def restore_prev(x, y):
     if d in "NS":
       y = y + 1 if d == "N" else y - 1
@@ -199,6 +221,7 @@ def do_instruction(instr, pos, first=None, last=None):
       if (a, b, c) == (None, None, None):
         x, y = restore_prev(x, y)
         break
+      happened = True
       x, y, d = a, b, c
     elif canvas[y][x] == "#":
       x, y = restore_prev(x, y)
@@ -248,6 +271,7 @@ def test_3():
   return [instr], pos
 
 def exec_instructions():
+  clip_n = 1
   is_first, is_last = True, False
   npos = POS
   for instr in instructions:
@@ -256,17 +280,25 @@ def exec_instructions():
     npos = do_instruction(instr, npos, first=is_first, last=is_last)
     if is_first:
       is_first = False
+    render(f"clips/_{str(clip_n).zfill(4)}.txt")
+    clip_n += 1
+  return npos
 
 def draw_regions():
+  counter = 0
+  lenf = len(canvas)
   for y, row in enumerate(canvas):
+    counter += 1
+    if counter % 10:
+      print(f"Row {y} of {lenf}")
     for x, _ in enumerate(row):
       side = get_side(x, y)
       if side:
         draw_at(x, y, side)
 
-#with open("input2.txt", "r") as file:
+with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
-with open("example.txt", "r", encoding="UTF-8") as file:
+#with open("example.txt", "r", encoding="UTF-8") as file:
   instructions = []
   for line in file.readlines():
     data, kind = parse_line(line.strip("\n"))
@@ -280,9 +312,10 @@ with open("example.txt", "r", encoding="UTF-8") as file:
   #instructions, POS = test_1()
   POS, DIMS = set_canvas_dimensions()
 
-  exec_instructions()
+  #draw_regions()
+  POS = exec_instructions()
 
-  render()
+  render("output.txt")
 
   print("Password", calc_password(), POS)
 
