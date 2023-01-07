@@ -3,41 +3,43 @@ canvas = []
 GLYPHS = ">v<^"
 DIRS = "ESWN"
 DIMS = (0, 0)
-#SIDE_SIZE = 4
-SIDE_SIZE = 50
+SIDE_SIZE = 4
+#SIDE_SIZE = 50
 
 next_side = {}
 
 if SIDE_SIZE == 4:
-  next_side["1N"] = "2Nn"
+  # If it's x<->y and they are mirrored, N
+  # If it's x<->y and they are same, N
+  next_side["1N"] = "2Sn"
   next_side["1E"] = "6Wn"
-  next_side["1W"] = "3Sn"
-  next_side["2N"] = "1Sn"
-  next_side["2S"] = "5Nn"
+  next_side["1W"] = "3Sy" # y=1 -> x=1
+  next_side["2N"] = "1Sy"
+  next_side["2S"] = "5Ny" # x=1 -> x=3
   next_side["2W"] = "6Nn"
-  next_side["3N"] = "1En"
+  next_side["3N"] = "1En" # x=1 -> y=1
   next_side["3S"] = "5En"
-  next_side["4E"] = "6Sn"
-  next_side["5S"] = "2Nn"
-  next_side["5W"] = "3Nn"
+  next_side["4E"] = "6Sn" # y=1 -> x=3
+  next_side["5S"] = "2Ny" # x=1 -> x=3
+  next_side["5W"] = "3Ny"
   next_side["6N"] = "4Wn"
-  next_side["6S"] = "2Wn"
-  next_side["6E"] = "1Wn"
+  next_side["6S"] = "2Wy"
+  next_side["6E"] = "1Wy"
 else:
-  next_side["1N"] = "6En"
-  next_side["1W"] = "4Ey" #mirrored?
-  next_side["2N"] = "6Nn"
-  next_side["2E"] = "5Wy" #mirrored?
-  next_side["2S"] = "3Wn"
-  next_side["3E"] = "2Nn"
-  next_side["3W"] = "4Sn"
-  next_side["5E"] = "2Wy" #mirrored?
-  next_side["5S"] = "6Wn"
-  next_side["4N"] = "3En"
-  next_side["4W"] = "1Ey" #m?
-  next_side["6E"] = "5Nn"
-  next_side["6S"] = "2Sn"
-  next_side["6W"] = "1SN"
+  next_side["1N"] = "6Ey"
+  next_side["1W"] = "4Ey"
+  next_side["2N"] = "6Nn" #Q1? x=1 -> x=1
+  next_side["2E"] = "5Wy"
+  next_side["2S"] = "3Wy" 
+  next_side["3E"] = "2Ny"
+  next_side["3W"] = "4Sy"
+  next_side["5E"] = "2Wy"
+  next_side["5S"] = "6Wy"
+  next_side["4N"] = "3Ey"
+  next_side["4W"] = "1Ey"
+  next_side["6E"] = "5Ny"
+  next_side["6S"] = "2Sn" #Q1
+  next_side["6W"] = "1Sy"
 
 class Instruction():
   """
@@ -125,7 +127,8 @@ def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
       break
   x, y = top_left
   if to_d == "N":
-    n = from_x // SIDE_SIZE
+    print(from_x, from_y, x, y)
+    n = from_x % SIDE_SIZE
     x += mirror(n) if mirrored else n
     y += SIDE_SIZE-1
   elif to_d == "S":
@@ -133,7 +136,7 @@ def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
     x += mirror(n) if mirrored else n
   elif to_d == "W":
     x += SIDE_SIZE-1
-    n = from_y // SIDE_SIZE
+    n = (from_x if mirrored else from_y) // SIDE_SIZE
     y += mirror(n) if mirrored else n
   elif to_d == "E":
     n = from_y // SIDE_SIZE
@@ -142,6 +145,7 @@ def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
 
 def get_wrap_pos_and_dir(x, y, d):
   side = get_side(x, y)
+  tmp = side + d
   side, d, m = next_side[side + d]
   x, y = get_wrap_pos(x, y, side, d, m == "y")
   if canvas[y][x] == "#":
@@ -193,11 +197,7 @@ def find_wrap_point(x, y, d):
 def get_glyph(d):
   return GLYPHS["ESWN".index(d)]
 
-happened = False
-
 def do_instruction(instr, pos, first=None, last=None):
-  global happened
-
   def restore_prev(x, y):
     if d in "NS":
       y = y + 1 if d == "N" else y - 1
@@ -221,7 +221,6 @@ def do_instruction(instr, pos, first=None, last=None):
       if (a, b, c) == (None, None, None):
         x, y = restore_prev(x, y)
         break
-      happened = True
       x, y, d = a, b, c
     elif canvas[y][x] == "#":
       x, y = restore_prev(x, y)
@@ -280,7 +279,7 @@ def exec_instructions():
     npos = do_instruction(instr, npos, first=is_first, last=is_last)
     if is_first:
       is_first = False
-    render(f"clips/_{str(clip_n).zfill(4)}.txt")
+    #render(f"clips/_{str(clip_n).zfill(4)}.txt")
     clip_n += 1
   return npos
 
@@ -296,9 +295,10 @@ def draw_regions():
       if side:
         draw_at(x, y, side)
 
-with open("input2.txt", "r") as file:
+#with open("input2.txt", "r") as file:
 #with open("input.txt", "r") as file:
 #with open("example.txt", "r", encoding="UTF-8") as file:
+with open("example2.txt", "r", encoding="UTF-8") as file:
   instructions = []
   for line in file.readlines():
     data, kind = parse_line(line.strip("\n"))
@@ -315,7 +315,7 @@ with open("input2.txt", "r") as file:
   #draw_regions()
   POS = exec_instructions()
 
-  render("output.txt")
+  render()
 
   print("Password", calc_password(), POS)
 
