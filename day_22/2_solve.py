@@ -127,7 +127,6 @@ def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
       break
   x, y = top_left
   if to_d == "N":
-    print(from_x, from_y, x, y)
     n = from_x % SIDE_SIZE
     x += mirror(n) if mirrored else n
     y += SIDE_SIZE-1
@@ -135,8 +134,9 @@ def get_wrap_pos(from_x, from_y, z, to_d, mirrored):
     n = from_x // SIDE_SIZE
     x += mirror(n) if mirrored else n
   elif to_d == "W":
+    n = (from_y % SIDE_SIZE) + 1
     x += SIDE_SIZE-1
-    n = (from_x if mirrored else from_y) // SIDE_SIZE
+    #n = (from_x if mirrored else from_y) // SIDE_SIZE
     y += mirror(n) if mirrored else n
   elif to_d == "E":
     n = from_y // SIDE_SIZE
