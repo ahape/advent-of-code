@@ -4,6 +4,8 @@ ELVES = []
 DIR_ORDER = [["N", "NE", "NW"], ["S", "SE", "SW"], ["W", "NW", "SW"], ["E", "NE", "SE"]]
 DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
 MAX_X, MAX_Y = 0, 0
+file_name = "example_sml.txt"
+#file_name = "example_lrg.txt"
 
 class Elf:
   def set_pos(self, x, y):
@@ -100,7 +102,7 @@ def do_round(round_i):
   return len(suggs) == len(ELVES)
 
 def main():
-  with open("example_sml.txt", "r", encoding="utf-8") as file_in:
+  with open(file_name, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
   print("Initial state")
   print_grid()
