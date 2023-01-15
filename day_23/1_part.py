@@ -5,25 +5,34 @@ ELVES, GRID = [], []
 MAX_X, MAX_Y = 0, 0
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
 DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
-#file_name = "example_sml.txt"
-file_name = "example_lrg.txt"
+#FILE_NAME = "example_sml.txt"
+FILE_NAME = "example_lrg.txt"
 ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 DEBUG = sys.argv[-1].lower() == "debug"
 
 class Elf:
-  def set_pos(self, x, y):
-    self.id = next(ids)
-    self.x = x
-    self.y = y
-  
   def check_pos_empty(self, x, y):
     if x < 0 or x >= MAX_X:
       return False
     if y < 0 or y >= MAX_Y:
       return False
-    return not any([e.x == x and e.y == y for e in ELVES])
+    return not any(e.x == x and e.y == y for e in ELVES)
+
+  def can_stay(self):
+    return \
+        self.check_pos_empty(self.x - 1, self.y - 1) and \
+        self.check_pos_empty(self.x + 1, self.y - 1) and \
+        self.check_pos_empty(self.x - 1, self.y + 1) and \
+        self.check_pos_empty(self.x + 1, self.y + 1) and \
+        self.check_pos_empty(self.x - 1, self.y) and \
+        self.check_pos_empty(self.x + 1, self.y) and \
+        self.check_pos_empty(self.x, self.y - 1) and \
+        self.check_pos_empty(self.x, self.y + 1)
 
   def suggest_pos(self):
+    if self.can_stay():
+      return None
+
     for dirs in DIR_ORDER:
       good_sugg = True
       for d in dirs:
@@ -55,12 +64,15 @@ class Elf:
     self.y = y
 
   def __init__(self, x, y):
-    self.set_pos(x, y)
+    self.id = next(ids)
+    self.x = x
+    self.y = y
 
   def __str__(self):
     return self.id if DEBUG else ELF
 
 def build_grid(file_in):
+  # pylint: disable=W0603
   global MAX_X, MAX_Y
   lines = file_in.readlines()
   MAX_Y = len(lines)
@@ -76,8 +88,10 @@ def build_grid(file_in):
 
 def print_grid():
   sb = ""
-  for row in GRID:
-    sb += f"{''.join(map(str, row))}\n"
+  for i, row in enumerate(GRID):
+    row_n = str(i+1).zfill(2)
+    printed = ''.join(map(str, row))
+    sb += f"{row_n} {printed}\n"
   print(sb)
 
 def rotate_dir_order():
@@ -105,7 +119,7 @@ def do_round(round_i):
   return len(suggs) == len(ELVES)
 
 def main():
-  with open(file_name, "r", encoding="utf-8") as file_in:
+  with open(FILE_NAME, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
   print("Initial state")
   print_grid()
@@ -114,4 +128,6 @@ def main():
       break
 
 if __name__ == "__main__":
+  # Run the command below to see movement diffs:
+  # git diff --no-index --word-diff-regex=. a b
   main()
