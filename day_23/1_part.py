@@ -1,14 +1,18 @@
+import sys
+
 ELF, EMPTY = "#", "."
-GRID = []
-ELVES = []
-DIR_ORDER = [["N", "NE", "NW"], ["S", "SE", "SW"], ["W", "NW", "SW"], ["E", "NE", "SE"]]
-DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
+ELVES, GRID = [], []
 MAX_X, MAX_Y = 0, 0
-file_name = "example_sml.txt"
-#file_name = "example_lrg.txt"
+DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
+DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
+#file_name = "example_sml.txt"
+file_name = "example_lrg.txt"
+ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+DEBUG = sys.argv[-1].lower() == "debug"
 
 class Elf:
   def set_pos(self, x, y):
+    self.id = next(ids)
     self.x = x
     self.y = y
   
@@ -42,11 +46,11 @@ class Elf:
         elif d in "NS":
           y += DIR_MOVE[d]
         return (x, y)
-    raise Exception("No suggestion possible")
+    return None
 
   def move(self, x, y):
     GRID[self.y][self.x] = EMPTY
-    GRID[y][x] = ELF
+    GRID[y][x] = self
     self.x = x
     self.y = y
 
@@ -54,7 +58,7 @@ class Elf:
     self.set_pos(x, y)
 
   def __str__(self):
-    return "#"
+    return self.id if DEBUG else ELF
 
 def build_grid(file_in):
   global MAX_X, MAX_Y
@@ -66,9 +70,8 @@ def build_grid(file_in):
     MAX_X = len(arr)
     GRID.append(arr)
     for x, c in enumerate(arr):
-      if c == "#":
-        elf = Elf(x, y)
-        GRID[y][x] = elf
+      if c == ELF:
+        elf = GRID[y][x] = Elf(x, y)
         ELVES.append(elf)
 
 def print_grid():
@@ -87,7 +90,7 @@ def get_suggestions():
   for elf in ELVES:
     suggs.append(elf.suggest_pos())
   for elf, sugg in zip(ELVES, suggs):
-    if suggs.count(sugg) == 1:
+    if sugg is not None and suggs.count(sugg) == 1:
       yield elf, sugg
 
 def do_round(round_i):
