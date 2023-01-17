@@ -2,20 +2,25 @@ import sys
 
 ELF, EMPTY = "#", "."
 ELVES, GRID = [], []
-MAX_X, MAX_Y = 0, 0
+MIN_X, MIN_Y, MAX_X, MAX_Y = 0, 0, 0, 0
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
 DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
 #FILE_NAME = "example_sml.txt"
-FILE_NAME = "example_lrg.txt"
-ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+#FILE_NAME = "example_lrg.txt"
+FILE_NAME = "input.txt"
+ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" * 200)
 DEBUG = sys.argv[-1].lower() == "debug"
 
 class Elf:
   def check_pos_empty(self, x, y, for_movement=False):
-    if x < 0 or x >= MAX_X:
-      return not for_movement
-    if y < 0 or y >= MAX_Y:
-      return not for_movement
+    if x < MIN_X or x >= MAX_X:
+      if for_movement:
+        expand_grid()
+      return True
+    if y < MIN_Y or y >= MAX_Y:
+      if for_movement:
+        expand_grid()
+      return True
     return not any(e.x == x and e.y == y for e in ELVES)
 
   def can_stay(self):
@@ -70,6 +75,17 @@ class Elf:
 
   def __str__(self):
     return self.id if DEBUG else ELF
+
+def get_ground_tiles():
+  max_x = max([elf.x for elf in ELVES])
+  max_y = max([elf.y for elf in ELVES])
+  min_x = min([elf.x for elf in ELVES])
+  min_y = min([elf.y for elf in ELVES])
+  return (max_x - min_x) * (max_y - min_y)
+
+def expand_grid():
+  # TODO Need to set grid_min_x/y & grid_max_x/y
+  # and account for negative values...
 
 def build_grid(file_in):
   # pylint: disable=W0603
@@ -126,6 +142,7 @@ def main():
   for n in range(10):
     if do_round(n):
       break
+  print("Ground tiles", get_ground_tiles())
 
 if __name__ == "__main__":
   # Run the command below to see movement diffs:
