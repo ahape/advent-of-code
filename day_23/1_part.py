@@ -11,11 +11,11 @@ ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 DEBUG = sys.argv[-1].lower() == "debug"
 
 class Elf:
-  def check_pos_empty(self, x, y):
+  def check_pos_empty(self, x, y, for_movement=False):
     if x < 0 or x >= MAX_X:
-      return False
+      return not for_movement
     if y < 0 or y >= MAX_Y:
-      return False
+      return not for_movement
     return not any(e.x == x and e.y == y for e in ELVES)
 
   def can_stay(self):
@@ -45,7 +45,7 @@ class Elf:
           x += 1
         elif "W" in d:
           x -= 1
-        if not self.check_pos_empty(x, y):
+        if not self.check_pos_empty(x, y, for_movement=True):
           good_sugg = False
           break
       if good_sugg:
