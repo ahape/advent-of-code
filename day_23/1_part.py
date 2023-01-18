@@ -3,6 +3,8 @@ import sys
 ELF, EMPTY = "#", "."
 ELVES, GRID = [], []
 MIN_X, MIN_Y, MAX_X, MAX_Y = 0, 0, 0, 0
+#PAD = 0
+PAD = 30
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
 DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
 #FILE_NAME = "example_sml.txt"
@@ -15,11 +17,11 @@ class Elf:
   def check_pos_empty(self, x, y, for_movement=False):
     if x < MIN_X or x >= MAX_X:
       if for_movement:
-        expand_grid()
+        raise Exception("Reached X boundary")
       return True
     if y < MIN_Y or y >= MAX_Y:
       if for_movement:
-        expand_grid()
+        raise Exception("Reached Y boundary")
       return True
     return not any(e.x == x and e.y == y for e in ELVES)
 
@@ -77,32 +79,53 @@ class Elf:
     return self.id if DEBUG else ELF
 
 def get_ground_tiles():
-  max_x = max([elf.x for elf in ELVES])
-  max_y = max([elf.y for elf in ELVES])
+  max_x = max([elf.x for elf in ELVES])+1
+  max_y = max([elf.y for elf in ELVES])+1
   min_x = min([elf.x for elf in ELVES])
   min_y = min([elf.y for elf in ELVES])
-  return (max_x - min_x) * (max_y - min_y)
-
-def expand_grid():
-  # TODO Need to set grid_min_x/y & grid_max_x/y
-  # and account for negative values...
+  empties = 0
+  for row in GRID[min_y:max_y]:
+    empties += row[min_x:max_x].count(EMPTY)
+  return empties
 
 def build_grid(file_in):
   # pylint: disable=W0603
-  global MAX_X, MAX_Y
+  global MAX_X, MAX_Y, GRID
+
+  def add_y_padding():
+    for _ in range(PAD):
+      GRID.append([EMPTY] * MAX_X)
+
+  def add_x_padding():
+    for i, row in enumerate(GRID):
+      GRID[i] = [EMPTY] * PAD + row + [EMPTY] * PAD
+    for elf in ELVES:
+      elf.x += PAD
+
   lines = file_in.readlines()
-  MAX_Y = len(lines)
+
+  MAX_X = len(lines[0]) - 1
+
+  add_y_padding()
+
   for y, line in enumerate(lines):
+    y += PAD
     line = line.strip("\n")
     arr = list(line)
-    MAX_X = len(arr)
     GRID.append(arr)
     for x, c in enumerate(arr):
       if c == ELF:
         elf = GRID[y][x] = Elf(x, y)
         ELVES.append(elf)
 
+  add_y_padding()
+  add_x_padding()
+
+  MAX_Y = len(GRID) - 1
+  MAX_X = len(GRID[0]) - 1
+
 def print_grid():
+  return
   sb = ""
   for i, row in enumerate(GRID):
     row_n = str(i+1).zfill(2)
