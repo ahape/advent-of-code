@@ -8,7 +8,8 @@ MIN_X, MIN_Y, MAX_X, MAX_Y = 0, 0, 0, 0
 PAD = 0
 #PAD = 30
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
-DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
+DIR_MOVE_X = { "N": 0, "S": 0, "W": -1, "E": 1 }
+DIR_MOVE_Y = { "N": -1, "S": 1, "W": 0, "E": 0 }
 #FILE_NAME = "example_sml.txt"
 FILE_NAME = "example_lrg.txt"
 #FILE_NAME = "input.txt"
@@ -51,11 +52,7 @@ class Elf:
           break
       if good_sugg:
         x, y, d = self.x, self.y, dirs[0]
-        if d in "WE":
-          x += DIR_MOVE[d]
-        elif d in "NS":
-          y += DIR_MOVE[d]
-        return (x, y)
+        return (x + DIR_MOVE_X[d], y + DIR_MOVE_Y[d])
     return None
 
   def move(self, x, y):
