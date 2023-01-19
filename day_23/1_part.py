@@ -1,4 +1,6 @@
-import sys
+# currently takes 3 seconds per round
+
+import sys, time
 
 ELF, EMPTY = "#", "."
 ELVES, GRID = [], []
@@ -125,13 +127,13 @@ def build_grid(file_in):
   MAX_X = len(GRID[0]) - 1
 
 def print_grid():
-  return
   sb = ""
   for i, row in enumerate(GRID):
     row_n = str(i+1).zfill(2)
     printed = ''.join(map(str, row))
     sb += f"{row_n} {printed}\n"
-  print(sb)
+  with open("output.txt", "w", encoding="utf-8") as f:
+    f.write(sb)
 
 def rotate_dir_order():
   first = DIR_ORDER[0]
@@ -153,16 +155,16 @@ def do_round(round_i):
 
   rotate_dir_order()
 
-  print(f"Round {round_i+1}")
+  print(f"Round {round_i+1}", time.time())
   print_grid()
-  return len(suggs) == len(ELVES)
+  return not len(suggs)
 
 def main():
   with open(FILE_NAME, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
   print("Initial state")
   print_grid()
-  for n in range(10):
+  for n in range(100000000):
     if do_round(n):
       break
   print("Ground tiles", get_ground_tiles())
