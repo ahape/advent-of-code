@@ -3,29 +3,21 @@
 import sys, time
 
 ELF, EMPTY = "#", "."
-ELVES, GRID = [], []
+CURRENT_POSITIONS, ELVES, GRID = set(), [], []
 MIN_X, MIN_Y, MAX_X, MAX_Y = 0, 0, 0, 0
-#PAD = 0
-PAD = 30
+PAD = 0
+#PAD = 30
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
 DIR_MOVE = { "N": -1, "S": 1, "W": -1, "E": 1 }
 #FILE_NAME = "example_sml.txt"
-#FILE_NAME = "example_lrg.txt"
-FILE_NAME = "input.txt"
+FILE_NAME = "example_lrg.txt"
+#FILE_NAME = "input.txt"
 ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" * 200)
 DEBUG = sys.argv[-1].lower() == "debug"
 
 class Elf:
-  def check_pos_empty(self, x, y, for_movement=False):
-    if x < MIN_X or x >= MAX_X:
-      if for_movement:
-        raise Exception("Reached X boundary")
-      return True
-    if y < MIN_Y or y >= MAX_Y:
-      if for_movement:
-        raise Exception("Reached Y boundary")
-      return True
-    return not any(e.x == x and e.y == y for e in ELVES)
+  def check_pos_empty(self, x, y):
+    return (x, y) not in CURRENT_POSITIONS
 
   def can_stay(self):
     return \
@@ -54,7 +46,7 @@ class Elf:
           x += 1
         elif "W" in d:
           x -= 1
-        if not self.check_pos_empty(x, y, for_movement=True):
+        if not self.check_pos_empty(x, y):
           good_sugg = False
           break
       if good_sugg:
@@ -68,6 +60,8 @@ class Elf:
 
   def move(self, x, y):
     GRID[self.y][self.x] = EMPTY
+    CURRENT_POSITIONS.remove((self.x, self.y))
+    CURRENT_POSITIONS.add((x, y))
     GRID[y][x] = self
     self.x = x
     self.y = y
@@ -76,6 +70,7 @@ class Elf:
     self.id = next(ids)
     self.x = x
     self.y = y
+    CURRENT_POSITIONS.add((x, y))
 
   def __str__(self):
     return self.id if DEBUG else ELF
@@ -157,14 +152,14 @@ def do_round(round_i):
 
   print(f"Round {round_i+1}", time.time())
   print_grid()
-  return not len(suggs)
+  return len(suggs) == len(ELVES)
 
 def main():
   with open(FILE_NAME, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
   print("Initial state")
   print_grid()
-  for n in range(100000000):
+  for n in range(10):
     if do_round(n):
       break
   print("Ground tiles", get_ground_tiles())
