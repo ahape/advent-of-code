@@ -3,13 +3,12 @@
 import sys, time
 
 ELF, EMPTY = "#", "."
-CURRENT_POSITIONS, ELVES, GRID = set(), [], []
-MIN_X, MIN_Y, MAX_X, MAX_Y = 0, 0, 0, 0
-PAD = 0
-#PAD = 30
+CURRENT_POSITIONS, ELVES = set(), []
+#PAD = 0
+PAD = 5000
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
-DIR_MOVE_X = { "N": 0, "S": 0, "W": -1, "E": 1 }
-DIR_MOVE_Y = { "N": -1, "S": 1, "W": 0, "E": 0 }
+DIR_MOVE_X = { "N": 0, "S": 0, "W": -1, "E": 1, "NE": 1, "NW": -1, "SE": 1, "SW": -1 }
+DIR_MOVE_Y = { "N": -1, "S": 1, "W": 0, "E": 0, "NE": -1, "NW": -1, "SE": 1, "SW": 1 }
 #FILE_NAME = "example_sml.txt"
 FILE_NAME = "example_lrg.txt"
 #FILE_NAME = "input.txt"
@@ -34,32 +33,17 @@ class Elf:
   def suggest_pos(self):
     if self.can_stay():
       return None
-
-    for dirs in DIR_ORDER:
-      good_sugg = True
-      for d in dirs:
-        x, y = self.x, self.y
-        if "N" in d:
-          y -= 1
-        elif "S" in d:
-          y += 1
-        if "E" in d:
-          x += 1
-        elif "W" in d:
-          x -= 1
-        if not self.check_pos_empty(x, y):
-          good_sugg = False
-          break
-      if good_sugg:
-        x, y, d = self.x, self.y, dirs[0]
-        return (x + DIR_MOVE_X[d], y + DIR_MOVE_Y[d])
+    x, y = self.x, self.y
+    for a, b, c in DIR_ORDER:
+      if self.check_pos_empty(x + DIR_MOVE_X[a], y + DIR_MOVE_Y[a]) and \
+         self.check_pos_empty(x + DIR_MOVE_X[b], y + DIR_MOVE_Y[b]) and \
+         self.check_pos_empty(x + DIR_MOVE_X[c], y + DIR_MOVE_Y[c]):
+        return (x + DIR_MOVE_X[a], y + DIR_MOVE_Y[a])
     return None
 
   def move(self, x, y):
-    GRID[self.y][self.x] = EMPTY
     CURRENT_POSITIONS.remove((self.x, self.y))
     CURRENT_POSITIONS.add((x, y))
-    GRID[y][x] = self
     self.x = x
     self.y = y
 
@@ -77,55 +61,16 @@ def get_ground_tiles():
   max_y = max([elf.y for elf in ELVES])+1
   min_x = min([elf.x for elf in ELVES])
   min_y = min([elf.y for elf in ELVES])
-  empties = 0
-  for row in GRID[min_y:max_y]:
-    empties += row[min_x:max_x].count(EMPTY)
-  return empties
+  return (max_x - min_x) * (max_y - min_y) - len(ELVES)
 
 def build_grid(file_in):
-  # pylint: disable=W0603
-  global MAX_X, MAX_Y, GRID
-
-  def add_y_padding():
-    for _ in range(PAD):
-      GRID.append([EMPTY] * MAX_X)
-
-  def add_x_padding():
-    for i, row in enumerate(GRID):
-      GRID[i] = [EMPTY] * PAD + row + [EMPTY] * PAD
-    for elf in ELVES:
-      elf.x += PAD
-
   lines = file_in.readlines()
-
-  MAX_X = len(lines[0]) - 1
-
-  add_y_padding()
 
   for y, line in enumerate(lines):
     y += PAD
-    line = line.strip("\n")
-    arr = list(line)
-    GRID.append(arr)
-    for x, c in enumerate(arr):
+    for x, c in enumerate(line.strip("\n")):
       if c == ELF:
-        elf = GRID[y][x] = Elf(x, y)
-        ELVES.append(elf)
-
-  add_y_padding()
-  add_x_padding()
-
-  MAX_Y = len(GRID) - 1
-  MAX_X = len(GRID[0]) - 1
-
-def print_grid():
-  sb = ""
-  for i, row in enumerate(GRID):
-    row_n = str(i+1).zfill(2)
-    printed = ''.join(map(str, row))
-    sb += f"{row_n} {printed}\n"
-  with open("output.txt", "w", encoding="utf-8") as f:
-    f.write(sb)
+        ELVES.append(Elf(x + PAD, y + PAD))
 
 def rotate_dir_order():
   first = DIR_ORDER[0]
@@ -147,18 +92,17 @@ def do_round(round_i):
 
   rotate_dir_order()
 
-  print(f"Round {round_i+1}", time.time())
-  print_grid()
-  return len(suggs) == len(ELVES)
+  #print(f"Round {round_i+1}")
+  return not len(suggs)
 
 def main():
   with open(FILE_NAME, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
-  print("Initial state")
-  print_grid()
-  for n in range(10):
+  n = 0
+  while True:
     if do_round(n):
       break
+    n += 1
   print("Ground tiles", get_ground_tiles())
 
 if __name__ == "__main__":
