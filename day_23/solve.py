@@ -1,19 +1,15 @@
-# currently takes 3 seconds per round
-
 import sys, time
 
 ELF, EMPTY = "#", "."
 CURRENT_POSITIONS, ELVES = set(), []
-#PAD = 0
-PAD = 5000
+PAD = 5000 # 'Safe' offset used to avoid negative coordinates
 DIR_ORDER = [("N","NE","NW"), ("S","SE","SW"),("W","NW","SW"),("E","NE","SE")]
 DIR_MOVE_X = { "N": 0, "S": 0, "W": -1, "E": 1, "NE": 1, "NW": -1, "SE": 1, "SW": -1 }
 DIR_MOVE_Y = { "N": -1, "S": 1, "W": 0, "E": 0, "NE": -1, "NW": -1, "SE": 1, "SW": 1 }
 #FILE_NAME = "example_sml.txt"
-FILE_NAME = "example_lrg.txt"
-#FILE_NAME = "input.txt"
-ids = iter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" * 200)
-DEBUG = sys.argv[-1].lower() == "debug"
+#FILE_NAME = "example_lrg.txt"
+FILE_NAME = "input.txt"
+PART_1 = sys.argv[-1].lower() == "1"
 
 class Elf:
   def check_pos_empty(self, x, y):
@@ -48,19 +44,12 @@ class Elf:
     self.y = y
 
   def __init__(self, x, y):
-    self.id = next(ids)
     self.x = x
     self.y = y
     CURRENT_POSITIONS.add((x, y))
 
-  def __str__(self):
-    return self.id if DEBUG else ELF
-
 def get_ground_tiles():
-  max_x = max([elf.x for elf in ELVES])+1
-  max_y = max([elf.y for elf in ELVES])+1
-  min_x = min([elf.x for elf in ELVES])
-  min_y = min([elf.y for elf in ELVES])
+  min_x, max_x, min_y, max_y = get_ranges()
   return (max_x - min_x) * (max_y - min_y) - len(ELVES)
 
 def build_grid(file_in):
@@ -85,27 +74,53 @@ def get_suggestions():
     if sugg is not None and suggs.count(sugg) == 1:
       yield elf, sugg
 
-def do_round(round_i):
+def do_round(round_n):
   suggs = [*get_suggestions()]
   for elf, (x, y) in suggs:
     elf.move(x, y)
 
   rotate_dir_order()
 
-  #print(f"Round {round_i+1}")
-  return not len(suggs)
+  #print(f"Round {round_n}")
+  return len(suggs) == 0
+
+def get_ranges():
+  xset, yset = set(), set()
+  for (x, y) in CURRENT_POSITIONS:
+    xset.add(x)
+    yset.add(y)
+  return (min(xset), max(xset)+1, min(yset), max(yset)+1)
+
+def print_grid():
+  """
+  For debugging
+  """
+  min_x, max_x, min_y, max_y = get_ranges()
+  output = ""
+  for y in range(min_y, max_y):
+    row = ""
+    for x in range(min_x, max_x):
+      if (x, y) in CURRENT_POSITIONS:
+        row += ELF
+      else:
+        row += EMPTY
+    output += row + "\n"
+  print(output)
 
 def main():
   with open(FILE_NAME, "r", encoding="utf-8") as file_in:
     build_grid(file_in)
-  n = 0
-  while True:
+  n = 1
+  start_time = time.time()
+  while not PART_1 or n <= 10:
     if do_round(n):
       break
     n += 1
-  print("Ground tiles", get_ground_tiles())
+
+  if PART_1:
+    print("Ground tiles", get_ground_tiles())
+  else:
+    print(f"Total rounds {n} in {time.time() - start_time} seconds")
 
 if __name__ == "__main__":
-  # Run the command below to see movement diffs:
-  # git diff --no-index --word-diff-regex=. a b
   main()
