@@ -2,16 +2,16 @@
 #
 # Setup
 #
-$col_1_const, $col_2_const = @(), @()
+$c1, $c2 = @(), @()
 (gc ./input.txt) -split "\n" | % {
   $x = $_ -split "\s+"
-  $col_1_const+=$x[0]
-  $col_2_const+=$x[1]
+  $c1+=$x[0]
+  $c2+=$x[1]
 }
+$c1, $c2 = ($c1|Sort), ($c2|Sort)
 #
 # Part One
 #
-$c1, $c2 = ($col_1_const|Sort), ($col_2_const|Sort)
 0..$c1.Count | % `
   -Begin { $sum = 0 } `
   -Process {
@@ -22,8 +22,7 @@ $c1, $c2 = ($col_1_const|Sort), ($col_2_const|Sort)
 #
 # Part Two
 #
-$c1, $c2 = ($col_1_const|Sort|gu), ($col_2_const|Sort)
-$c1 | % `
+$c1 | gu | % `
   -Begin { $sum = 0 } `
   -Process {
     $o = $_
