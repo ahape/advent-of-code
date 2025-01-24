@@ -1,31 +1,63 @@
 #!/opt/homebrew/bin/pwsh
 
+$DELIM = "Z"
+$searchTerm = "XMAS"
 $fileText = gc "./example.txt"
 
-$rows = $fileText.Split('\n')
-$flatForward = [string]::Join("Z", $rows)
-$tmp = $flatForward.ToCharArray()
-[Array]::Reverse($tmp)
-$flatBackward = [string]::Join("", $tmp)
-$colLen = $rows[0].Length
-$sb = [System.Text.StringBuilder]::new()
-0..$colLen | % {
-  $i = $_
-  $rows | % {
-    $sb.Append($_[$i]) | Out-Null
-  }
-  $sb.Append("Z") | Out-Null
+function Reverse-String {
+  param([string]$str)
+
+  $charArray = $str.ToCharArray()
+  [Array]::Reverse($charArray)
+  return -join $charArray
 }
-$rotatedRight = $sb.ToString()
-$tmp = $rotatedRight.ToCharArray()
-[Array]::Reverse($tmp)
-$rotatedLeft = [String]::Join("", $tmp)
 
-$total = 0
-$total += [System.Text.RegularExpressions.Regex]::Count($flatForward, "XMAS")
-$total += [System.Text.RegularExpressions.Regex]::Count($flatBackward, "XMAS")
-$total += [System.Text.RegularExpressions.Regex]::Count($rotatedRight, "XMAS")
-$total += [System.Text.RegularExpressions.Regex]::Count($rotatedLeft, "XMAS")
-$total
+function Rotate-RightFlat {
+  param([string[]]$matrix)
 
-#TODO gather all diagonal forms
+  $colLen = $matrix[0].Length
+  $sb = [System.Text.StringBuilder]::new()
+  0..$colLen | % {
+    $i = $_
+    $matrix | % {
+      $sb.Append($_[$i]) | Out-Null
+    }
+    $sb.Append($DELIM) | Out-Null
+  }
+  return $sb.ToString()
+}
+
+function Flatten-Diagonals {
+  param([string[]]$matrix)
+
+  <#
+
+matrix = [
+  ["A", "B", "C"],
+  ["E", "F", "G"],
+  ["H", "I", "J"],
+]
+num_rows = len(matrix)
+num_cols = len(matrix[0])
+s = ""
+for d in range(0, num_rows + num_cols):
+  for col in range(0, d + 1):
+    row = d - col
+    if row < num_rows and col < num_cols:
+      s += matrix[row][col]
+
+print(s) # AEBHFCIGJ
+
+  #>
+}
+
+$lines = $fileText.Split('\n')
+$flatForward = $lines -join $DELIM
+$flatBackward = Reverse-String $flatForward
+$rotatedRight = Rotate-RightFlat $lines
+$rotatedLeft = Reverse-String $rotatedRight
+
+$all = @($flatForward, $flatBackward, $rotatedRight, $rotatedLeft) -join "Z"
+$total = [System.Text.RegularExpressions.Regex]::Count($all, $searchTerm)
+Write-Host $total
+
