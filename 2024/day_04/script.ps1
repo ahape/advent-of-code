@@ -15,9 +15,9 @@ function Reverse-String {
 function Rotate-RightFlat {
   param([string[]]$matrix)
 
-  $colLen = $matrix[0].Length
+  $numCols = $matrix[0].Length
   $sb = [System.Text.StringBuilder]::new()
-  0..$colLen | % {
+  0..$numCols | % {
     $i = $_
     $matrix | % {
       $sb.Append($_[$i]) | Out-Null
@@ -30,25 +30,25 @@ function Rotate-RightFlat {
 function Flatten-Diagonals {
   param([string[]]$matrix)
 
-  <#
-
-matrix = [
-  ["A", "B", "C"],
-  ["E", "F", "G"],
-  ["H", "I", "J"],
-]
-num_rows = len(matrix)
-num_cols = len(matrix[0])
-s = ""
-for d in range(0, num_rows + num_cols):
-  for col in range(0, d + 1):
-    row = d - col
-    if row < num_rows and col < num_cols:
-      s += matrix[row][col]
-
-print(s) # AEBHFCIGJ
-
-  #>
+  $numRows = $matrix.Length
+  $numCols = $matrix[0].Length
+  $sb = [System.Text.StringBuilder]::new()
+  $i = 0
+  0..($numRows + $numCols) | % {
+    $d = $_
+    0..($d + 1) | % {
+      $col = $_
+      $row = $d - $col
+      if ($row -lt $numRows -and $col -lt $numCols) {
+        $sb.Append($matrix[$row][$col]) | Out-Null
+        $i++
+        if ($i % $numCols -eq 0) {
+          $sb.Append("\n") | Out-Null
+        }
+      }
+    }
+  }
+  return "$sb"
 }
 
 $lines = $fileText.Split('\n')
@@ -56,8 +56,14 @@ $flatForward = $lines -join $DELIM
 $flatBackward = Reverse-String $flatForward
 $rotatedRight = Rotate-RightFlat $lines
 $rotatedLeft = Reverse-String $rotatedRight
+$flatDiagonal = Flatten-Diagonals $lines
 
-$all = @($flatForward, $flatBackward, $rotatedRight, $rotatedLeft) -join "Z"
+$lines
+"======"
+$flatDiagonal.Split('\n')
+#[System.Linq.Enumerable]::Chunk($flatDiagonal, $lines[0].Length) -join '\n'
+<#
+$all = @($flatForward, $flatBackward, $rotatedRight, $rotatedLeft, $flatDiagonal) -join "Z"
 $total = [System.Text.RegularExpressions.Regex]::Count($all, $searchTerm)
 Write-Host $total
-
+#>
